@@ -436,6 +436,202 @@
           } ],
           "$schema" : "http://json-schema.org/draft-07/schema#"
         },
+        "StagesVariable" : {
+          "title" : "StagesVariable",
+          "description" : "Stages variable definition. The value is an array of stages.",
+          "allOf" : [ {
+            "$ref" : "#/definitions/pipeline/common/Variable"
+          }, {
+            "type" : "object",
+            "required" : [ "type" ],
+            "properties" : {
+              "type" : {
+                "description" : "Variable type.",
+                "type" : "string",
+                "enum" : [ "stages" ]
+              },
+              "value" : {
+                "description" : "Variable value. An array of stages.",
+                "type" : "array",
+                "minItems" : 1,
+                "items" : {
+                  "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
+                },
+                "metadata" : {
+                  "inputProperties" : {
+                    "dependsOn" : [ "type" ]
+                  }
+                }
+              },
+              "default" : {
+                "description" : "Default value for the variable. An array of stages.",
+                "type" : "array",
+                "minItems" : 1,
+                "items" : {
+                  "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
+                }
+              },
+              "enum" : {
+                "description" : "Defines a list of accepted input values.",
+                "type" : "array",
+                "items" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
+                  }
+                }
+              }
+            }
+          } ],
+          "$schema" : "http://json-schema.org/draft-07/schema#"
+        },
+        "ConnectorVariable" : {
+          "title" : "ConnectorVariable",
+          "description" : "Connector variable definition.",
+          "allOf" : [ {
+            "$ref" : "#/definitions/pipeline/common/Variable"
+          }, {
+            "type" : "object",
+            "required" : [ "type" ],
+            "properties" : {
+              "type" : {
+                "description" : "Variable type.",
+                "type" : "string",
+                "enum" : [ "connector" ]
+              },
+              "value" : {
+                "description" : "Connector reference value. Supports expressions.",
+                "type" : "string"
+              },
+              "default" : {
+                "description" : "Default connector reference.",
+                "type" : "string"
+              },
+              "oneof" : {
+                "description" : "List of allowed connector types.",
+                "type" : "array",
+                "items" : {
+                  "type" : "string",
+                  "enum" : [ "gitlab", "github", "bitbucket", "gcp", "aws", "docker", "kubernetes", "artifactory", "azure", "jenkins", "jira", "servicenow" ]
+                }
+              }
+            }
+          } ],
+          "$schema" : "http://json-schema.org/draft-07/schema#"
+        },
+        "Expression" : {
+          "title" : "Expression",
+          "description" : "String value matching a Harness pipeline expression or template placeholder (e.g., <+something> or ${{ ... }}).",
+          "type" : "string",
+          "pattern" : "(\\$\\{\\{.+\\}\\}|<\\+.+>.*)",
+          "$schema" : "http://json-schema.org/draft-07/schema#"
+        },
+        "Delegate" : {
+          "title" : "Delegate",
+          "description" : "Delegate defines the delegate matching logic. Supports expressions.",
+          "oneOf" : [ {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }, {
+            "type" : "string"
+          } ],
+          "$schema" : "http://json-schema.org/draft-07/schema#"
+        },
+        "TemplateRef" : {
+          "title" : "TemplateRef",
+          "description" : "Template identifier and input configuration.",
+          "type" : "object",
+          "additionalProperties" : false,
+          "required" : [ "uses" ],
+          "properties" : {
+            "uses" : {
+              "description" : "Template identifier reference.",
+              "type" : "string"
+            },
+            "with" : {
+              "description" : "Template input overrides.",
+              "$ref" : "#/definitions/pipeline/common/WithInputs"
+            },
+            "gitBranch" : {
+              "description" : "Git branch for remote template resolution.",
+              "type" : "string"
+            },
+            "container" : {
+              "description" : "Caller-side container overrides merged into the resolved template step. Applied for any V1 step template whose spec contains run, run-test, or background (including git-clone and build-and-push templates that wrap those steps).\n",
+              "$ref" : "#/definitions/pipeline/common/TemplateContainerOverlay"
+            },
+            "sourceStepType" : {
+              "description" : "Merge-time origin of an unresolved agent alias. Set to Agent when this template ref was produced from an agent identity. Used for CI metrics; not sent to lite-engine.\n",
+              "type" : "string"
+            },
+            "sourceName" : {
+              "description" : "Identifier of the originating agent template when sourceStepType is set. First write wins so an outer custom agent is not overwritten by inner harnessAI.\n",
+              "type" : "string"
+            }
+          },
+          "$schema" : "http://json-schema.org/draft-07/schema#"
+        },
+        "WithInputs" : {
+          "title" : "WithInputs",
+          "description" : "Input overrides for service, environment, or infrastructure.",
+          "type" : "object",
+          "properties" : {
+            "overlay" : {
+              "description" : "Overlay configuration for merging inputs.",
+              "type" : "object",
+              "additionalProperties" : true
+            }
+          },
+          "additionalProperties" : true,
+          "$schema" : "http://json-schema.org/draft-07/schema#"
+        },
+        "TemplateContainerOverlay" : {
+          "title" : "TemplateContainerOverlay",
+          "description" : "Caller-side container overrides on a V1 template step (`template.container`). Mirrors TemplateMergeServiceHelper.CONTAINER_PROPAGATION_ALLOWLIST. Applied to resolved run, run-test, and background containers (including nested group/parallel). Image, connector, and entrypoint stay on the template and are not overridable here.\n",
+          "type" : "object",
+          "additionalProperties" : false,
+          "properties" : {
+            "user" : {
+              "description" : "User ID to run as. Supports expressions.",
+              "oneOf" : [ {
+                "type" : "integer"
+              }, {
+                "type" : "string"
+              } ]
+            },
+            "group" : {
+              "description" : "Group to run as.",
+              "type" : "string"
+            },
+            "cpu" : {
+              "description" : "CPU limit. Ignored when resources.limits.cpu is set.",
+              "type" : "string"
+            },
+            "memory" : {
+              "description" : "Memory limit. Ignored when resources.limits.memory is set.",
+              "type" : "string"
+            },
+            "resources" : {
+              "description" : "Container resource limits and requests. Takes precedence over the flat cpu/memory fields.",
+              "$ref" : "#/definitions/pipeline/Resource"
+            },
+            "shm-size" : {
+              "description" : "Shared memory size.",
+              "type" : "string"
+            },
+            "privileged" : {
+              "description" : "Run in privileged mode. Supports expressions.",
+              "oneOf" : [ {
+                "type" : "boolean"
+              }, {
+                "$ref" : "#/definitions/pipeline/common/Expression"
+              } ]
+            }
+          },
+          "$schema" : "http://json-schema.org/draft-07/schema#"
+        },
         "StrategyConfigV1" : {
           "title" : "StrategyConfigV1",
           "type" : "object",
@@ -504,13 +700,6 @@
           }, {
             "required" : [ "repeat" ]
           } ],
-          "$schema" : "http://json-schema.org/draft-07/schema#"
-        },
-        "Expression" : {
-          "title" : "Expression",
-          "description" : "String value matching a Harness pipeline expression or template placeholder (e.g., <+something> or ${{ ... }}).",
-          "type" : "string",
-          "pattern" : "(\\$\\{\\{.+\\}\\}|<\\+.+>.*)",
           "$schema" : "http://json-schema.org/draft-07/schema#"
         },
         "MatrixConfigV1" : {
@@ -879,19 +1068,6 @@
           },
           "$schema" : "http://json-schema.org/draft-07/schema#"
         },
-        "Delegate" : {
-          "title" : "Delegate",
-          "description" : "Delegate defines the delegate matching logic. Supports expressions.",
-          "oneOf" : [ {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }, {
-            "type" : "string"
-          } ],
-          "$schema" : "http://json-schema.org/draft-07/schema#"
-        },
         "ObjectOrExpression" : {
           "title" : "ObjectOrExpression",
           "description" : "Object or expression value. Supports expressions.",
@@ -955,148 +1131,6 @@
           },
           "$schema" : "http://json-schema.org/draft-07/schema#"
         },
-        "TemplateRef" : {
-          "title" : "TemplateRef",
-          "description" : "Template identifier and input configuration.",
-          "type" : "object",
-          "additionalProperties" : false,
-          "required" : [ "uses" ],
-          "properties" : {
-            "uses" : {
-              "description" : "Template identifier reference.",
-              "type" : "string"
-            },
-            "with" : {
-              "description" : "Template input overrides.",
-              "$ref" : "#/definitions/pipeline/common/WithInputs"
-            },
-            "gitBranch" : {
-              "description" : "Git branch for remote template resolution.",
-              "type" : "string"
-            },
-            "container" : {
-              "description" : "Caller-side container overrides merged into the resolved template step. Applied for any V1 step template whose spec contains run, run-test, or background (including git-clone and build-and-push templates that wrap those steps).\n",
-              "$ref" : "#/definitions/pipeline/common/TemplateContainerOverlay"
-            },
-            "sourceStepType" : {
-              "description" : "Merge-time origin of an unresolved agent alias. Set to Agent when this template ref was produced from an agent identity. Used for CI metrics; not sent to lite-engine.\n",
-              "type" : "string"
-            },
-            "sourceName" : {
-              "description" : "Identifier of the originating agent template when sourceStepType is set. First write wins so an outer custom agent is not overwritten by inner harnessAI.\n",
-              "type" : "string"
-            }
-          },
-          "$schema" : "http://json-schema.org/draft-07/schema#"
-        },
-        "WithInputs" : {
-          "title" : "WithInputs",
-          "description" : "Input overrides for service, environment, or infrastructure.",
-          "type" : "object",
-          "properties" : {
-            "overlay" : {
-              "description" : "Overlay configuration for merging inputs.",
-              "type" : "object",
-              "additionalProperties" : true
-            }
-          },
-          "additionalProperties" : true,
-          "$schema" : "http://json-schema.org/draft-07/schema#"
-        },
-        "TemplateContainerOverlay" : {
-          "title" : "TemplateContainerOverlay",
-          "description" : "Caller-side container overrides on a V1 template step (`template.container`). Mirrors TemplateMergeServiceHelper.CONTAINER_PROPAGATION_ALLOWLIST. Applied to resolved run, run-test, and background containers (including nested group/parallel). Image, connector, and entrypoint stay on the template and are not overridable here.\n",
-          "type" : "object",
-          "additionalProperties" : false,
-          "properties" : {
-            "user" : {
-              "description" : "User ID to run as. Supports expressions.",
-              "oneOf" : [ {
-                "type" : "integer"
-              }, {
-                "type" : "string"
-              } ]
-            },
-            "group" : {
-              "description" : "Group to run as.",
-              "type" : "string"
-            },
-            "cpu" : {
-              "description" : "CPU limit. Ignored when resources.limits.cpu is set.",
-              "type" : "string"
-            },
-            "memory" : {
-              "description" : "Memory limit. Ignored when resources.limits.memory is set.",
-              "type" : "string"
-            },
-            "resources" : {
-              "description" : "Container resource limits and requests. Takes precedence over the flat cpu/memory fields.",
-              "$ref" : "#/definitions/pipeline/Resource"
-            },
-            "shm-size" : {
-              "description" : "Shared memory size.",
-              "type" : "string"
-            },
-            "privileged" : {
-              "description" : "Run in privileged mode. Supports expressions.",
-              "oneOf" : [ {
-                "type" : "boolean"
-              }, {
-                "$ref" : "#/definitions/pipeline/common/Expression"
-              } ]
-            }
-          },
-          "$schema" : "http://json-schema.org/draft-07/schema#"
-        },
-        "StagesVariable" : {
-          "title" : "StagesVariable",
-          "description" : "Stages variable definition. The value is an array of stages.",
-          "allOf" : [ {
-            "$ref" : "#/definitions/pipeline/common/Variable"
-          }, {
-            "type" : "object",
-            "required" : [ "type" ],
-            "properties" : {
-              "type" : {
-                "description" : "Variable type.",
-                "type" : "string",
-                "enum" : [ "stages" ]
-              },
-              "value" : {
-                "description" : "Variable value. An array of stages.",
-                "type" : "array",
-                "minItems" : 1,
-                "items" : {
-                  "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
-                },
-                "metadata" : {
-                  "inputProperties" : {
-                    "dependsOn" : [ "type" ]
-                  }
-                }
-              },
-              "default" : {
-                "description" : "Default value for the variable. An array of stages.",
-                "type" : "array",
-                "minItems" : 1,
-                "items" : {
-                  "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
-                }
-              },
-              "enum" : {
-                "description" : "Defines a list of accepted input values.",
-                "type" : "array",
-                "items" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
-                  }
-                }
-              }
-            }
-          } ],
-          "$schema" : "http://json-schema.org/draft-07/schema#"
-        },
         "CIResourceClass" : {
           "title" : "CIResourceClass",
           "description" : "Cloud runner machine size enumeration (maps to io.harness.beans.yaml.extended.CIResourceClass).",
@@ -1147,1552 +1181,98 @@
           "type" : "string",
           "enum" : [ "run-all", "skip-queued" ],
           "$schema" : "http://json-schema.org/draft-07/schema#"
-        },
-        "ConnectorVariable" : {
-          "title" : "ConnectorVariable",
-          "description" : "Connector variable definition.",
-          "allOf" : [ {
-            "$ref" : "#/definitions/pipeline/common/Variable"
-          }, {
+        }
+      },
+      "pipeline" : {
+        "type" : "object",
+        "title" : "pipeline",
+        "additionalProperties" : false,
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "pattern" : "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+          },
+          "name" : {
+            "type" : "string",
+            "pattern" : "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "Description of the pipeline."
+          },
+          "clone" : {
+            "$ref" : "#/definitions/pipeline/Clone"
+          },
+          "inputs" : {
+            "$ref" : "#/definitions/pipeline/common/NGVariableV1Wrapper"
+          },
+          "timeout" : {
+            "type" : "string",
+            "description" : "Defines pipeline timeout",
+            "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+          },
+          "allow-stage-executions" : {
+            "type" : "boolean",
+            "description" : "Allows stage executions."
+          },
+          "fixed-inputs-on-rerun" : {
+            "type" : "boolean",
+            "description" : "Fixed inputs on rerun."
+          },
+          "delegate" : {
+            "$ref" : "#/definitions/pipeline/common/Delegate"
+          },
+          "env" : {
             "type" : "object",
-            "required" : [ "type" ],
-            "properties" : {
-              "type" : {
-                "description" : "Variable type.",
-                "type" : "string",
-                "enum" : [ "connector" ]
-              },
-              "value" : {
-                "description" : "Connector reference value. Supports expressions.",
-                "type" : "string"
-              },
-              "default" : {
-                "description" : "Default connector reference.",
-                "type" : "string"
-              },
-              "oneof" : {
-                "description" : "List of allowed connector types.",
-                "type" : "array",
-                "items" : {
-                  "type" : "string",
-                  "enum" : [ "gitlab", "github", "bitbucket", "gcp", "aws", "docker", "kubernetes", "artifactory", "azure", "jenkins", "jira", "servicenow" ]
-                }
-              }
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "description" : "Provides the default environment variables."
+          },
+          "repo" : {
+            "description" : "Configures the default repository.",
+            "$ref" : "#/definitions/pipeline/Repository"
+          },
+          "barriers" : {
+            "type" : "array",
+            "description" : "Barriers provides optional pipeline barriers.",
+            "items" : {
+              "type" : "string"
             }
-          } ],
-          "$schema" : "http://json-schema.org/draft-07/schema#"
-        }
-      },
-      "steps" : {
-        "unified" : {
-          "StepItems" : {
-            "title" : "StepItems",
-            "description" : "Available step types for pipeline execution.",
-            "type" : "object",
-            "if" : {
-              "anyOf" : [ {
-                "required" : [ "run" ]
-              }, {
-                "required" : [ "clone" ]
-              }, {
-                "required" : [ "background" ]
-              }, {
-                "required" : [ "run-test" ]
-              }, {
-                "required" : [ "wait" ]
-              }, {
-                "required" : [ "barrier" ]
-              }, {
-                "required" : [ "queue" ]
-              }, {
-                "required" : [ "policy" ]
-              }, {
-                "required" : [ "change-advisor" ]
-              }, {
-                "required" : [ "approval" ]
-              }, {
-                "required" : [ "parallel" ]
-              }, {
-                "required" : [ "group" ]
-              }, {
-                "required" : [ "template" ]
-              }, {
-                "required" : [ "agent" ]
-              }, {
-                "required" : [ "action" ]
-              }, {
-                "required" : [ "deploy" ]
-              }, {
-                "required" : [ "build" ]
-              }, {
-                "required" : [ "test" ]
-              }, {
-                "required" : [ "chaos" ]
-              }, {
-                "required" : [ "idp" ]
-              }, {
-                "required" : [ "infrastructure" ]
-              }, {
-                "required" : [ "sto" ]
-              }, {
-                "required" : [ "ai-eval" ]
-              }, {
-                "required" : [ "render" ]
-              } ]
-            },
-            "then" : {
-              "allOf" : [ {
-                "if" : {
-                  "anyOf" : [ {
-                    "required" : [ "run" ]
-                  }, {
-                    "required" : [ "clone" ]
-                  }, {
-                    "required" : [ "background" ]
-                  }, {
-                    "required" : [ "run-test" ]
-                  } ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/StepNodeV1"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "wait" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedWaitStepNode"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "barrier" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedBarrierStepNode"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "queue" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedQueueStepNode"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "policy" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPolicyStepNode"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "change-advisor" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedChangeAdvisorStepNode"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "approval" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedApprovalStepNode"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "parallel" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/ParallelSteps"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "group" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/GroupSteps"
-                }
-              }, {
-                "if" : {
-                  "anyOf" : [ {
-                    "required" : [ "template" ]
-                  }, {
-                    "required" : [ "agent" ]
-                  }, {
-                    "required" : [ "action" ]
-                  }, {
-                    "required" : [ "deploy" ]
-                  }, {
-                    "required" : [ "build" ]
-                  }, {
-                    "required" : [ "test" ]
-                  }, {
-                    "required" : [ "chaos" ]
-                  }, {
-                    "required" : [ "idp" ]
-                  }, {
-                    "required" : [ "infrastructure" ]
-                  }, {
-                    "required" : [ "sto" ]
-                  }, {
-                    "required" : [ "ai-eval" ]
-                  } ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/common/UnifiedTemplate"
-                }
-              }, {
-                "if" : {
-                  "required" : [ "render" ]
-                },
-                "then" : {
-                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedRenderStepNode"
-                }
-              } ]
-            },
-            "else" : {
-              "required" : [ "run" ]
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
           },
-          "StepNodeV1" : {
-            "title" : "StepNodeV1",
-            "description" : "Unified step node for CI/CD pipelines.",
-            "type" : "object",
-            "additionalProperties" : false,
-            "anyOf" : [ {
-              "required" : [ "run" ]
-            }, {
-              "required" : [ "clone" ]
-            }, {
-              "required" : [ "background" ]
-            }, {
-              "required" : [ "run-test" ]
-            } ],
-            "properties" : {
-              "id" : {
-                "description" : "Unique identifier for the step.",
-                "type" : "string",
-                "pattern" : "^[a-zA-Z_][0-9a-zA-Z_$]{0,127}$"
-              },
-              "name" : {
-                "description" : "Display name of the step.",
-                "type" : "string",
-                "pattern" : "^[a-zA-Z_][0-9a-zA-Z-_ ]{0,127}$",
-                "minLength" : 1,
-                "maxLength" : 128
-              },
-              "description" : {
-                "description" : "Description of the step.",
-                "type" : "string"
-              },
-              "if" : {
-                "description" : "Conditional execution expression. Step is skipped if condition resolves to false. Supports expressions.",
-                "type" : "string"
-              },
-              "permissions" : {
-                "description" : "Resource to action map used to scope the HARNESS_TOKEN injected into this step. For example, pipeline - execute.",
-                "type" : "object",
-                "additionalProperties" : {
-                  "type" : "string"
-                }
-              },
-              "strategy" : {
-                "description" : "Execution strategy (matrix, for, while, repeat). Supports expressions.",
-                "oneOf" : [ {
-                  "$ref" : "#/definitions/pipeline/common/StrategyConfigV1"
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "enforce" : {
-                "description" : "Policy enforcement configuration.",
-                "$ref" : "#/definitions/pipeline/steps/unified/PolicyConfig"
-              },
-              "needs" : {
-                "description" : "Step dependencies (steps that must complete before this one).",
-                "type" : "array",
-                "items" : {
-                  "type" : "string"
-                }
-              },
-              "on-failure" : {
-                "$ref" : "#/definitions/pipeline/common/OnFailure"
-              },
-              "timeout" : {
-                "description" : "Step timeout duration. Supports expressions.",
-                "type" : "string",
-                "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
-              },
-              "run" : {
-                "description" : "Run step configuration. Can be a simple command string or a detailed run configuration object.",
-                "oneOf" : [ {
-                  "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "run-test" : {
-                "description" : "Run tests step configuration. Supports expressions.",
-                "oneOf" : [ {
-                  "$ref" : "#/definitions/pipeline/steps/unified/RunTestsStepInfoV1"
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "clone" : {
-                "description" : "Git clone step configuration.",
-                "$ref" : "#/definitions/pipeline/Clone"
-              },
-              "background" : {
-                "description" : "Background service step configuration. Supports expressions.",
-                "oneOf" : [ {
-                  "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "templateConnectorRefs" : {
-                "description" : "Connector refs collected from template with: inputs and stamped on the expanded step so hosted-infra validation can see them after merge.",
-                "type" : "array",
-                "items" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "PolicyConfig" : {
-            "title" : "PolicyConfig",
-            "description" : "Policy enforcement configuration.",
-            "type" : "object",
-            "additionalProperties" : false,
-            "properties" : {
-              "policySets" : {
-                "description" : "Policy sets to enforce.",
-                "type" : "array",
-                "items" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "RunStepInfoV1" : {
-            "title" : "RunStepInfoV1",
-            "description" : "Run step configuration for executing scripts.",
-            "type" : "object",
-            "additionalProperties" : false,
-            "properties" : {
-              "shell" : {
-                "description" : "Shell type to use. Supports expressions.",
-                "type" : "string"
-              },
-              "script" : {
-                "description" : "Script to execute. Supports expressions.",
-                "type" : "string"
-              },
-              "uses" : {
-                "description" : "Plugin identifier registered with VMS. Supports expressions.",
-                "type" : "string"
-              },
-              "version" : {
-                "description" : "Optional plugin version pin. Unset lets VMS resolve. Supports expressions.",
-                "type" : "string"
-              },
-              "container" : {
-                "description" : "Container configuration for the step.",
-                "$ref" : "#/definitions/pipeline/steps/unified/Container"
-              },
-              "output" : {
-                "description" : "Output variables to capture.",
-                "oneOf" : [ {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/definitions/pipeline/common/OutputV1"
-                  }
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "report" : {
-                "description" : "Test report configuration. Supports expressions.",
-                "$ref" : "#/definitions/pipeline/steps/unified/Report"
-              },
-              "delegate" : {
-                "description" : "Delegate selectors.",
-                "$ref" : "#/definitions/pipeline/common/Delegate"
-              },
-              "env" : {
-                "description" : "Environment variables. Supports expressions.",
-                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
-              },
-              "with" : {
-                "description" : "Additional parameters. Supports expressions.",
-                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
-              },
-              "download" : {
-                "description" : "Download configuration. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : false,
-                  "properties" : {
-                    "source" : {
-                      "description" : "Source URL to download from.",
-                      "type" : "string"
-                    },
-                    "target" : {
-                      "description" : "Target path to save the file.",
-                      "type" : "string"
-                    },
-                    "checksum" : {
-                      "description" : "Checksum to verify the downloaded file.",
-                      "type" : "string"
-                    },
-                    "fallback" : {
-                      "description" : "Fallback URL if primary source fails.",
-                      "type" : "string"
-                    },
-                    "entrypoint" : {
-                      "description" : "Entrypoint command and arguments for the downloaded binary.",
-                      "type" : "array",
-                      "items" : {
-                        "type" : "string"
-                      }
-                    }
-                  }
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "output-alias" : {
-                "description" : "Output alias configuration for exporting variables.",
-                "type" : "object",
-                "additionalProperties" : false,
-                "required" : [ "key", "scope" ],
-                "properties" : {
-                  "key" : {
-                    "description" : "Output variable key. Supports expressions.",
-                    "type" : "string"
-                  },
-                  "scope" : {
-                    "description" : "Export scope for the output.",
-                    "type" : "string",
-                    "enum" : [ "Pipeline", "Stage", "StepGroup" ]
-                  }
-                }
-              },
-              "sourceStepType" : {
-                "description" : "Merge-time origin of an expanded step. Set to Agent when this run was produced from an agent template. Used for CI metrics; not sent to lite-engine.\n",
-                "type" : "string"
-              },
-              "sourceName" : {
-                "description" : "Identifier of the originating agent template when sourceStepType is set. First write wins so an outer custom agent is not overwritten by inner harnessAI.\n",
-                "type" : "string"
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "Container" : {
-            "title" : "Container",
-            "description" : "Container configuration for step execution.",
-            "type" : "object",
-            "additionalProperties" : false,
-            "properties" : {
-              "image" : {
-                "description" : "Container image to use. Supports expressions.",
-                "type" : "string"
-              },
-              "connector" : {
-                "description" : "Image registry connector. Supports expressions.",
-                "type" : "string"
-              },
-              "registry" : {
-                "description" : "Harness Artifact Registry reference for the image. Supports expressions.",
-                "type" : "string"
-              },
-              "credentials" : {
-                "description" : "Container registry credentials.",
-                "type" : "object",
-                "properties" : {
-                  "username" : {
-                    "description" : "Registry username.",
-                    "type" : "string"
-                  },
-                  "password" : {
-                    "description" : "Registry password.",
-                    "type" : "string"
-                  },
-                  "aws" : {
-                    "description" : "AWS ECR credentials.",
-                    "type" : "object",
-                    "properties" : {
-                      "access-key" : {
-                        "description" : "AWS access key.",
-                        "type" : "string"
-                      },
-                      "secret-key" : {
-                        "description" : "AWS secret key.",
-                        "type" : "string"
-                      }
-                    }
-                  }
-                }
-              },
-              "pull" : {
-                "description" : "Image pull policy. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "string",
-                  "enum" : [ "always", "never", "if-not-exists" ]
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "entrypoint" : {
-                "description" : "Container entrypoint. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "array",
-                  "items" : {
-                    "type" : "string"
-                  }
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "args" : {
-                "description" : "Container arguments.",
-                "type" : "array",
-                "items" : {
-                  "type" : "string"
-                }
-              },
-              "dns" : {
-                "description" : "Custom DNS servers.",
-                "type" : "array",
-                "items" : {
-                  "type" : "string"
-                }
-              },
-              "env" : {
-                "description" : "Environment variables.",
-                "type" : "object",
-                "additionalProperties" : {
-                  "type" : "string"
-                }
-              },
-              "extra-hosts" : {
-                "description" : "Extra hosts to add to /etc/hosts.",
-                "type" : "array",
-                "items" : {
-                  "type" : "string"
-                }
-              },
-              "network" : {
-                "description" : "Docker network name.",
-                "type" : "string"
-              },
-              "network-mode" : {
-                "description" : "Docker network mode.",
-                "type" : "string"
-              },
-              "privileged" : {
-                "description" : "Run in privileged mode. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "boolean"
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "workdir" : {
-                "description" : "Working directory.",
-                "type" : "string"
-              },
-              "ports" : {
-                "description" : "Ports to expose.",
-                "type" : "array",
-                "items" : {
-                  "type" : "string"
-                }
-              },
-              "port-bindings" : {
-                "description" : "Port bindings. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : {
-                    "type" : "string"
-                  }
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "volumes" : {
-                "description" : "Volume mounts.",
-                "type" : "array",
-                "items" : {
-                  "type" : "object",
-                  "properties" : {
-                    "source" : {
-                      "description" : "Source path.",
-                      "type" : "string"
-                    },
-                    "target" : {
-                      "description" : "Target path in container.",
-                      "type" : "string"
-                    }
-                  }
-                }
-              },
-              "user" : {
-                "description" : "User ID to run as. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "integer"
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "group" : {
-                "description" : "Group to run as.",
-                "type" : "string"
-              },
-              "cpu" : {
-                "description" : "CPU limit. Ignored when resources.limits.cpu is set.",
-                "type" : "string"
-              },
-              "memory" : {
-                "description" : "Memory limit. Ignored when resources.limits.memory is set.",
-                "type" : "string"
-              },
-              "resources" : {
-                "description" : "Container resource limits and requests. Takes precedence over the flat cpu/memory fields.",
-                "$ref" : "#/definitions/pipeline/Resource"
-              },
-              "shm-size" : {
-                "description" : "Shared memory size.",
-                "type" : "string"
-              },
-              "files" : {
-                "description" : "Files to inject into container.",
-                "type" : "object",
-                "additionalProperties" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "Report" : {
-            "title" : "Report",
-            "description" : "Test report configuration.",
-            "oneOf" : [ {
-              "type" : "object",
-              "properties" : {
-                "paths" : {
-                  "description" : "Report file paths. Can be single value or array. Supports expressions.",
-                  "oneOf" : [ {
-                    "type" : "array",
-                    "items" : {
-                      "type" : "string"
-                    }
-                  }, {
-                    "type" : "string"
-                  } ]
-                },
-                "type" : {
-                  "description" : "Report type.",
-                  "type" : "string",
-                  "enum" : [ "junit" ]
-                }
-              }
-            }, {
-              "$ref" : "#/definitions/pipeline/common/Expression"
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "RunTestsStepInfoV1" : {
-            "title" : "RunTestsStepInfoV1",
-            "description" : "Run tests step configuration for test intelligence.",
-            "type" : "object",
-            "additionalProperties" : false,
-            "properties" : {
-              "shell" : {
-                "description" : "Shell type to use. Supports expressions.",
-                "type" : "string"
-              },
-              "script" : {
-                "description" : "Test command to execute. Supports expressions.",
-                "type" : "string"
-              },
-              "match" : {
-                "description" : "Test file patterns to match. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "array",
-                  "items" : {
-                    "type" : "string"
-                  }
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "container" : {
-                "description" : "Container configuration for the step.",
-                "$ref" : "#/definitions/pipeline/steps/unified/Container"
-              },
-              "output" : {
-                "description" : "Output variables to capture.",
-                "type" : "array",
-                "items" : {
-                  "$ref" : "#/definitions/pipeline/common/OutputV1"
-                }
-              },
-              "report" : {
-                "description" : "Test report configuration. Supports expressions.",
-                "$ref" : "#/definitions/pipeline/steps/unified/Report"
-              },
-              "delegate" : {
-                "description" : "Delegate selectors.",
-                "$ref" : "#/definitions/pipeline/common/Delegate"
-              },
-              "env" : {
-                "description" : "Environment variables. Supports expressions.",
-                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
-              },
-              "with" : {
-                "description" : "Additional parameters. Supports expressions.",
-                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
-              },
-              "intelligence" : {
-                "description" : "Test intelligence configuration.",
-                "type" : "object",
-                "additionalProperties" : false,
-                "properties" : {
-                  "disabled" : {
-                    "description" : "Whether test intelligence is disabled. Supports expressions.",
-                    "oneOf" : [ {
-                      "type" : "boolean"
-                    }, {
-                      "$ref" : "#/definitions/pipeline/common/Expression"
-                    } ]
-                  }
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedWaitStepNode" : {
-            "title" : "UnifiedWaitStepNode",
-            "description" : "Wait step node for pausing pipeline execution.",
-            "allOf" : [ {
-              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
-            }, {
-              "type" : "object",
-              "required" : [ "wait" ],
-              "properties" : {
-                "wait" : {
-                  "description" : "Wait step configuration.",
-                  "type" : "object",
-                  "required" : [ "duration" ],
-                  "properties" : {
-                    "duration" : {
-                      "description" : "Duration to wait (e.g., 10s, 5m, 1h 30m). Supports <+...> and ${{...}} expressions, runtime input and execution input.",
-                      "type" : "string",
-                      "pattern" : "^((([1-9])+\\d+[s])|((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>.*)|(.*\\$\\{\\{.+\\}\\}.*))$"
-                    }
-                  }
-                }
-              }
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedPmsAbstractStepNode" : {
-            "title" : "UnifiedPmsAbstractStepNode",
-            "description" : "Abstract step node with common properties shared by all step types.",
-            "type" : "object",
-            "properties" : {
-              "id" : {
-                "description" : "Unique identifier for the step.",
-                "type" : "string"
-              },
-              "name" : {
-                "description" : "Display name of the step.",
-                "type" : "string"
-              },
-              "description" : {
-                "description" : "Description of the step.",
-                "type" : "string"
-              },
-              "if" : {
-                "description" : "Conditional execution expression. Step is skipped if condition resolves to false. Supports expressions.",
-                "type" : "string"
-              },
-              "permissions" : {
-                "description" : "Resource to action map used to scope the HARNESS_TOKEN injected into this step. For example, pipeline - execute.",
-                "type" : "object",
-                "additionalProperties" : {
-                  "type" : "string"
-                }
-              },
-              "strategy" : {
-                "description" : "Execution strategy (matrix, for, while, repeat). Supports expressions.",
-                "oneOf" : [ {
-                  "$ref" : "#/definitions/pipeline/common/StrategyConfigV1"
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "enforce" : {
-                "description" : "Policy enforcement configuration.",
-                "$ref" : "#/definitions/pipeline/steps/unified/PolicyConfig"
-              },
-              "on-failure" : {
-                "$ref" : "#/definitions/pipeline/common/OnFailure"
-              },
-              "timeout" : {
-                "description" : "Step timeout duration. Supports expressions.",
-                "type" : "string",
-                "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedBarrierStepNode" : {
-            "title" : "UnifiedBarrierStepNode",
-            "description" : "Barrier step node for synchronizing pipeline execution.",
-            "allOf" : [ {
-              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
-            }, {
-              "type" : "object",
-              "required" : [ "barrier" ],
-              "properties" : {
-                "barrier" : {
-                  "description" : "Barrier step configuration.",
-                  "type" : "object",
-                  "required" : [ "name" ],
-                  "properties" : {
-                    "name" : {
-                      "description" : "Reference name of the barrier defined in pipeline barriers.",
-                      "type" : "string"
-                    }
-                  }
-                }
-              }
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedQueueStepNode" : {
-            "title" : "UnifiedQueueStepNode",
-            "description" : "Queue step node for resource constraint management.",
-            "allOf" : [ {
-              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
-            }, {
-              "type" : "object",
-              "required" : [ "queue" ],
-              "properties" : {
-                "queue" : {
-                  "description" : "Queue step configuration.",
-                  "type" : "object",
-                  "required" : [ "key", "scope" ],
-                  "properties" : {
-                    "key" : {
-                      "description" : "Resource key for the queue. Supports expressions.",
-                      "type" : "string"
-                    },
-                    "scope" : {
-                      "description" : "Scope of the queue holding.",
-                      "type" : "string",
-                      "enum" : [ "Pipeline", "Stage" ]
-                    }
-                  }
-                }
-              }
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedPolicyStepNode" : {
-            "title" : "UnifiedPolicyStepNode",
-            "description" : "Policy step node for OPA policy evaluation.",
-            "allOf" : [ {
-              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
-            }, {
-              "type" : "object",
-              "required" : [ "policy" ],
-              "properties" : {
-                "policy" : {
-                  "description" : "Policy step configuration.",
-                  "type" : "object",
-                  "required" : [ "sets", "payload" ],
-                  "properties" : {
-                    "sets" : {
-                      "description" : "Policy sets to evaluate. Supports single value or array. Supports expressions.",
-                      "oneOf" : [ {
-                        "type" : "array",
-                        "items" : {
-                          "type" : "string"
-                        }
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "payload" : {
-                      "description" : "JSON payload to evaluate against policies. Supports expressions.",
-                      "type" : "string"
-                    }
-                  }
-                }
-              }
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedChangeAdvisorStepNode" : {
-            "title" : "UnifiedChangeAdvisorStepNode",
-            "description" : "Change Advisor step node for advisory evaluation before deployment.",
-            "allOf" : [ {
-              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
-            }, {
-              "type" : "object",
-              "required" : [ "change-advisor" ],
-              "properties" : {
-                "change-advisor" : {
-                  "description" : "Change Advisor step configuration.",
-                  "type" : "object",
-                  "properties" : {
-                    "mode" : {
-                      "description" : "Advisory mode for the Change Advisor step.",
-                      "oneOf" : [ {
-                        "type" : "string",
-                        "enum" : [ "ADVISORY", "ENFORCING" ]
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "policy-pack" : {
-                      "description" : "Policy pack to evaluate the change against (e.g. balanced).",
-                      "oneOf" : [ {
-                        "type" : "string"
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "timeout-minutes" : {
-                      "description" : "Maximum time in minutes to wait for the advisory call.",
-                      "oneOf" : [ {
-                        "type" : "integer"
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "presets" : {
-                      "description" : "Preset identifiers applied to the advisory evaluation.",
-                      "oneOf" : [ {
-                        "type" : "array",
-                        "items" : {
-                          "type" : "string"
-                        }
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "env" : {
-                      "description" : "Target environment identifier for the change.",
-                      "oneOf" : [ {
-                        "type" : "string"
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "user-groups" : {
-                      "description" : "User groups for approval when the advisory decision requires gating. Supports single value or array. Supports expressions.",
-                      "oneOf" : [ {
-                        "type" : "array",
-                        "items" : {
-                          "type" : "string"
-                        }
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "service-accounts" : {
-                      "description" : "Service accounts for approval when the advisory decision requires gating. Supports single value or array. Supports expressions.",
-                      "oneOf" : [ {
-                        "type" : "array",
-                        "items" : {
-                          "type" : "string"
-                        }
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "approvers-min-count" : {
-                      "description" : "Minimum number of approvers required when the advisory decision requires gating. Supports expressions.",
-                      "oneOf" : [ {
-                        "type" : "integer"
-                      }, {
-                        "type" : "string"
-                      } ]
-                    },
-                    "block-executor" : {
-                      "description" : "Block pipeline executor from approving when the advisory decision requires gating. Supports expressions.",
-                      "oneOf" : [ {
-                        "type" : "boolean"
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    }
-                  }
-                }
-              }
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedApprovalStepNode" : {
-            "title" : "UnifiedApprovalStepNode",
-            "description" : "Approval step node for manual, Jira, ServiceNow, or custom approvals.",
-            "allOf" : [ {
-              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
-            }, {
-              "type" : "object",
-              "required" : [ "approval" ],
-              "properties" : {
-                "approval" : {
-                  "description" : "Approval step configuration.",
-                  "type" : "object",
-                  "required" : [ "uses" ],
-                  "properties" : {
-                    "uses" : {
-                      "description" : "Type of approval.",
-                      "type" : "string",
-                      "enum" : [ "harness", "jira", "servicenow", "custom" ]
-                    },
-                    "with" : {
-                      "description" : "Approval type-specific configuration.",
-                      "type" : "object"
-                    }
-                  },
-                  "allOf" : [ {
-                    "if" : {
-                      "properties" : {
-                        "uses" : {
-                          "const" : "harness"
-                        }
-                      }
-                    },
-                    "then" : {
-                      "properties" : {
-                        "with" : {
-                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedManualApprovalStepSpec"
-                        }
-                      }
-                    }
-                  }, {
-                    "if" : {
-                      "properties" : {
-                        "uses" : {
-                          "const" : "jira"
-                        }
-                      }
-                    },
-                    "then" : {
-                      "properties" : {
-                        "with" : {
-                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedJiraApprovalStepSpec"
-                        }
-                      }
-                    }
-                  }, {
-                    "if" : {
-                      "properties" : {
-                        "uses" : {
-                          "const" : "servicenow"
-                        }
-                      }
-                    },
-                    "then" : {
-                      "properties" : {
-                        "with" : {
-                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedServiceNowApprovalStepSpec"
-                        }
-                      }
-                    }
-                  }, {
-                    "if" : {
-                      "properties" : {
-                        "uses" : {
-                          "const" : "custom"
-                        }
-                      }
-                    },
-                    "then" : {
-                      "properties" : {
-                        "with" : {
-                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedCustomApprovalStepSpec"
-                        }
-                      }
-                    }
-                  } ]
-                }
-              }
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedManualApprovalStepSpec" : {
-            "title" : "UnifiedManualApprovalStepSpec",
-            "description" : "Harness manual approval step specification.",
-            "type" : "object",
-            "properties" : {
-              "message" : {
-                "description" : "Approval message. Supports expressions.",
-                "type" : "string"
-              },
-              "callback" : {
-                "description" : "Callback ID for the approval. Supports expressions.",
-                "type" : "string"
-              },
-              "user-groups" : {
-                "description" : "User groups for approval. Supports single value or array. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "array",
-                  "items" : {
-                    "type" : "string"
-                  }
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "service-accounts" : {
-                "description" : "Service accounts for approval. Supports single value or array. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "array",
-                  "items" : {
-                    "type" : "string"
-                  }
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "approvers-min-count" : {
-                "description" : "Minimum number of approvers required. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "integer"
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "block-executor" : {
-                "description" : "Block pipeline executor from approving. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "boolean"
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "execution-details" : {
-                "description" : "Include pipeline execution history.",
-                "type" : "boolean"
-              },
-              "auto-reject" : {
-                "description" : "Enable automatic rejection on timeout. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "boolean"
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "auto-approve" : {
-                "description" : "Enable automatic approval.",
-                "type" : "boolean"
-              },
-              "timezone" : {
-                "description" : "Timezone for auto-approval deadline. Supports expressions.",
-                "type" : "string"
-              },
-              "deadline" : {
-                "description" : "Deadline for auto-approval. Supports expressions.",
-                "type" : "string"
-              },
-              "comments" : {
-                "description" : "Comments for auto-approval. Supports expressions.",
-                "type" : "string"
-              },
-              "inputs" : {
-                "description" : "Approver input parameters keyed by input variable name.",
-                "type" : "object",
-                "additionalProperties" : {
-                  "type" : "object",
-                  "additionalProperties" : false,
-                  "properties" : {
-                    "description" : {
-                      "description" : "Description of the approver input.",
-                      "type" : "string"
-                    },
-                    "pattern" : {
-                      "description" : "Regex pattern the approver input value must match. Mutually exclusive with `enum`. Supports expressions.",
-                      "type" : "string"
-                    },
-                    "multi-select" : {
-                      "description" : "Allow selecting multiple values from `enum`. Only applicable when `enum` is provided.",
-                      "type" : "boolean"
-                    },
-                    "enum" : {
-                      "description" : "Allowed values for the approver input. Mutually exclusive with `pattern`. Supports expressions.",
-                      "oneOf" : [ {
-                        "type" : "array",
-                        "items" : {
-                          "type" : "string"
-                        }
-                      }, {
-                        "$ref" : "#/definitions/pipeline/common/Expression"
-                      } ]
-                    },
-                    "required" : {
-                      "description" : "Whether the approver input is required.",
-                      "type" : "boolean"
-                    },
-                    "default" : {
-                      "description" : "Default value for the approver input. Supports expressions.",
-                      "type" : "string"
-                    }
-                  },
-                  "not" : {
-                    "required" : [ "pattern", "enum" ]
-                  }
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedJiraApprovalStepSpec" : {
-            "title" : "UnifiedJiraApprovalStepSpec",
-            "description" : "Jira approval step specification.",
-            "type" : "object",
-            "additionalProperties" : true,
-            "required" : [ "approve" ],
-            "properties" : {
-              "retry" : {
-                "description" : "Retry interval for polling Jira.",
-                "type" : "string"
-              },
-              "approve" : {
-                "description" : "Approval criteria configuration.",
-                "anyOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : true
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "reject" : {
-                "description" : "Rejection criteria configuration.",
-                "anyOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : true
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "run" : {
-                "description" : "Run step configuration for script execution.",
-                "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
-              },
-              "project" : {
-                "description" : "Jira project key. The fetched issue must belong to this project.",
-                "type" : "string"
-              },
-              "type" : {
-                "description" : "Jira issue type. The fetched issue must be of this type.",
-                "type" : "string"
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedServiceNowApprovalStepSpec" : {
-            "title" : "UnifiedServiceNowApprovalStepSpec",
-            "description" : "ServiceNow approval step specification.",
-            "type" : "object",
-            "additionalProperties" : true,
-            "required" : [ "approve" ],
-            "properties" : {
-              "retry" : {
-                "description" : "Retry interval for polling ServiceNow.",
-                "type" : "string"
-              },
-              "approve" : {
-                "description" : "Approval criteria configuration.",
-                "anyOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : true
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "reject" : {
-                "description" : "Rejection criteria configuration.",
-                "anyOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : true
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "run" : {
-                "description" : "Run step configuration for script execution.",
-                "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
-              },
-              "change-window" : {
-                "description" : "ServiceNow change window configuration.",
-                "type" : "object",
-                "properties" : {
-                  "start" : {
-                    "description" : "Start field for change window.",
-                    "type" : "string"
-                  },
-                  "end" : {
-                    "description" : "End field for change window.",
-                    "type" : "string"
-                  }
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedCustomApprovalStepSpec" : {
-            "title" : "UnifiedCustomApprovalStepSpec",
-            "description" : "Custom approval step specification.",
-            "type" : "object",
-            "additionalProperties" : true,
-            "required" : [ "retry", "approve" ],
-            "properties" : {
-              "script-timeout" : {
-                "description" : "Timeout for script execution.",
-                "type" : "string"
-              },
-              "retry" : {
-                "description" : "Retry interval for polling.",
-                "type" : "string"
-              },
-              "approve" : {
-                "description" : "Approval criteria configuration.",
-                "anyOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : true
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "reject" : {
-                "description" : "Rejection criteria configuration.",
-                "anyOf" : [ {
-                  "type" : "object",
-                  "additionalProperties" : true
-                }, {
-                  "type" : "string"
-                } ]
-              },
-              "run" : {
-                "description" : "Run step configuration for script execution.",
-                "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "ParallelSteps" : {
-            "title" : "ParallelSteps",
-            "description" : "Defines a list of steps to be executed in parallel.",
-            "type" : "object",
-            "additionalProperties" : false,
-            "required" : [ "parallel" ],
-            "properties" : {
-              "parallel" : {
-                "type" : "object",
-                "additionalProperties" : false,
-                "required" : [ "steps" ],
-                "properties" : {
-                  "steps" : {
-                    "type" : "array",
-                    "items" : {
-                      "$ref" : "#/definitions/pipeline/steps/unified/StepItems"
-                    }
-                  }
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "GroupSteps" : {
-            "title" : "GroupSteps",
-            "description" : "Defines a group of steps.",
-            "type" : "object",
-            "required" : [ "group" ],
-            "properties" : {
-              "id" : {
-                "type" : "string",
-                "description" : "Unique identifier for the step group."
-              },
-              "name" : {
-                "type" : "string",
-                "description" : "Display name of the step group."
-              },
-              "group" : {
-                "type" : "object",
-                "required" : [ "steps" ],
-                "properties" : {
-                  "id" : {
-                    "type" : "string",
-                    "description" : "Unique identifier for the step group.",
-                    "pattern" : "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
-                  },
-                  "name" : {
-                    "type" : "string",
-                    "description" : "Display name of the step group."
-                  },
-                  "description" : {
-                    "type" : "string",
-                    "description" : "Description of the step group."
-                  },
-                  "if" : {
-                    "type" : "string",
-                    "description" : "Conditional execution expression. Group is skipped if condition resolves to false."
-                  },
-                  "strategy" : {
-                    "description" : "Execution strategy (matrix, for, while, repeat). Supports expressions.",
-                    "oneOf" : [ {
-                      "$ref" : "#/definitions/pipeline/common/StrategyConfigV1"
-                    }, {
-                      "$ref" : "#/definitions/pipeline/common/Expression"
-                    } ]
-                  },
-                  "on-failure" : {
-                    "$ref" : "#/definitions/pipeline/common/OnFailure"
-                  },
-                  "timeout" : {
-                    "type" : "string",
-                    "description" : "Step group timeout duration.",
-                    "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
-                  },
-                  "output" : {
-                    "description" : "Step group output variables. Each entry is a single key:value pair where the key is the\nSG-published output name and the value is either a plain-string descendant step output\nname to capture, or a Harness expression evaluated at step group completion.\n",
-                    "type" : "array",
-                    "items" : {
-                      "type" : "object",
-                      "minProperties" : 1,
-                      "maxProperties" : 1,
-                      "additionalProperties" : false,
-                      "patternProperties" : {
-                        "^[a-zA-Z_][a-zA-Z0-9_]*$" : {
-                          "type" : "string"
-                        }
-                      }
-                    }
-                  },
-                  "steps" : {
-                    "description" : "Steps within the group, or an expression that resolves to an array of steps.",
-                    "oneOf" : [ {
-                      "type" : "array",
-                      "items" : {
-                        "$ref" : "#/definitions/pipeline/steps/unified/StepItems"
-                      },
-                      "minItems" : 1
-                    }, {
-                      "$ref" : "#/definitions/pipeline/common/Expression"
-                    } ]
-                  }
-                }
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          },
-          "UnifiedRenderStepNode" : {
-            "title" : "UnifiedRenderStepNode",
-            "description" : "Render step node for manifest rendering.",
-            "allOf" : [ {
-              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
-            }, {
-              "type" : "object",
-              "required" : [ "render" ],
-              "properties" : {
-                "render" : {
-                  "description" : "Render step configuration.",
-                  "type" : "object",
-                  "properties" : {
-                    "with" : {
-                      "description" : "Render step parameters including manifest type and inputs.",
-                      "type" : "object",
-                      "required" : [ "kind" ],
-                      "properties" : {
-                        "kind" : {
-                          "description" : "Manifest type to render (e.g., k8s).",
-                          "type" : "string"
-                        }
-                      },
-                      "additionalProperties" : true
-                    }
-                  }
-                }
-              }
-            } ],
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          }
-        },
-        "common" : {
-          "PlatformV1" : {
-            "title" : "PlatformV1",
-            "description" : "Platform configuration describing the operating system and CPU architecture for a stage runtime.",
-            "type" : "object",
-            "additionalProperties" : false,
-            "properties" : {
-              "os" : {
-                "description" : "Operating system for the stage runtime. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "string",
-                  "enum" : [ "linux", "windows", "macos" ]
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              },
-              "arch" : {
-                "description" : "CPU architecture for the stage runtime. Supports expressions.",
-                "oneOf" : [ {
-                  "type" : "string",
-                  "enum" : [ "amd64", "arm64" ]
-                }, {
-                  "$ref" : "#/definitions/pipeline/common/Expression"
-                } ]
-              }
-            },
-            "$schema" : "http://json-schema.org/draft-07/schema#"
-          }
-        }
-      },
-      "Resource" : {
-        "title" : "Resource",
-        "type" : "object",
-        "additionalProperties" : false,
-        "description" : "Resource defines container resource limits and requests.",
-        "properties" : {
-          "limits" : {
-            "description" : "Limits defines the maximum resources the container can use.",
-            "$ref" : "#/definitions/pipeline/ResourceLimits"
-          },
-          "requests" : {
-            "description" : "Requests defines the minimum resources reserved for the container.",
-            "$ref" : "#/definitions/pipeline/ResourceLimits"
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "ResourceLimits" : {
-        "title" : "ResourceLimits",
-        "type" : "object",
-        "additionalProperties" : false,
-        "description" : "ResourceLimits defines CPU and memory constraints.",
-        "properties" : {
-          "cpu" : {
-            "description" : "CPU allocation (e.g., \"100m\", \"0.5\", \"2\").",
+          "if" : {
             "type" : "string",
-            "minLength" : 1
+            "description" : "If provides conditional pipeline execution logic. If the condition resolves to false, the pipeline is skipped."
           },
-          "memory" : {
-            "description" : "Memory allocation (e.g., \"128Mi\", \"1Gi\").",
-            "type" : "string",
-            "minLength" : 1
+          "on" : {
+            "$ref" : "#/definitions/pipeline/On"
+          },
+          "notifications" : {
+            "type" : "array",
+            "description" : "Notifications provides optional pipeline notifications.",
+            "items" : {
+              "$ref" : "#/definitions/pipeline/NotificationRules"
+            }
+          },
+          "tags" : {
+            "type" : "object",
+            "description" : "Tags for the pipeline.",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "template" : {
+            "description" : "Pipeline template reference.",
+            "$ref" : "#/definitions/pipeline/common/TemplateRef"
+          },
+          "stages" : {
+            "type" : "array",
+            "description" : "Pipeline stages - can contain stages, groups, or parallel executions.",
+            "items" : {
+              "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
+            },
+            "maxItems" : 256,
+            "minItems" : 1
           }
         },
         "$schema" : "http://json-schema.org/draft-07/schema#"
@@ -2861,6 +1441,546 @@
             }, {
               "type" : "string"
             } ]
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "Resource" : {
+        "title" : "Resource",
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "Resource defines container resource limits and requests.",
+        "properties" : {
+          "limits" : {
+            "description" : "Limits defines the maximum resources the container can use.",
+            "$ref" : "#/definitions/pipeline/ResourceLimits"
+          },
+          "requests" : {
+            "description" : "Requests defines the minimum resources reserved for the container.",
+            "$ref" : "#/definitions/pipeline/ResourceLimits"
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "ResourceLimits" : {
+        "title" : "ResourceLimits",
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "ResourceLimits defines CPU and memory constraints.",
+        "properties" : {
+          "cpu" : {
+            "description" : "CPU allocation (e.g., \"100m\", \"0.5\", \"2\").",
+            "type" : "string",
+            "minLength" : 1
+          },
+          "memory" : {
+            "description" : "Memory allocation (e.g., \"128Mi\", \"1Gi\").",
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "Repository" : {
+        "title" : "Repository",
+        "description" : "Repository defines a remote git repository.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "connector" : {
+            "description" : "Connector provides the repository connector.",
+            "type" : "string"
+          },
+          "name" : {
+            "description" : "Name provides the repository name.",
+            "type" : "string"
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "On" : {
+        "title" : "On",
+        "description" : "On provides conditional pipeline execution logic based on trigger event and action mapping. If the conditional logic resolves to false, the pipeline is skipped.",
+        "oneOf" : [ {
+          "$ref" : "#/definitions/pipeline/EventType"
+        }, {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/pipeline/OnEvent"
+          }
+        } ],
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "EventType" : {
+        "title" : "EventType",
+        "description" : "EventType defines the supported trigger event types.",
+        "type" : "string",
+        "enum" : [ "push", "pull_request" ],
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "OnEvent" : {
+        "title" : "OnEvent",
+        "description" : "OnEvent represents a single event in the on array - either a string or an object with event configuration.",
+        "oneOf" : [ {
+          "$ref" : "#/definitions/pipeline/EventType"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "push" : {
+              "$ref" : "#/definitions/pipeline/BranchFilter"
+            },
+            "pull_request" : {
+              "$ref" : "#/definitions/pipeline/BranchFilter"
+            }
+          },
+          "minProperties" : 1,
+          "maxProperties" : 1
+        } ],
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "BranchFilter" : {
+        "title" : "BranchFilter",
+        "description" : "BranchFilter defines branch filtering for push and pull_request events.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "branches" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "NotificationRules" : {
+        "title" : "NotificationRules",
+        "description" : "NotificationRules defines notification configuration for pipeline events.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "description" : "Unique identifier for the notification rule."
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Name of the notification rule."
+          },
+          "disabled" : {
+            "type" : "boolean",
+            "description" : "Whether the notification rule is disabled."
+          },
+          "if" : {
+            "type" : "string",
+            "description" : "Condition that must evaluate to true for the notification to be sent. Supports expressions."
+          },
+          "on" : {
+            "type" : "array",
+            "description" : "Notification events that trigger the notification.",
+            "items" : {
+              "$ref" : "#/definitions/pipeline/NotificationEvent"
+            }
+          },
+          "uses" : {
+            "description" : "Notification channel type.",
+            "type" : "string",
+            "enum" : [ "email", "webhook", "pager-duty", "ms-teams", "slack", "datadog" ]
+          },
+          "with" : {
+            "description" : "Channel-specific configuration based on 'uses' type.",
+            "type" : "object"
+          }
+        },
+        "allOf" : [ {
+          "if" : {
+            "properties" : {
+              "uses" : {
+                "const" : "email"
+              }
+            }
+          },
+          "then" : {
+            "properties" : {
+              "with" : {
+                "$ref" : "#/definitions/pipeline/PmsEmailChannel"
+              }
+            }
+          }
+        }, {
+          "if" : {
+            "properties" : {
+              "uses" : {
+                "const" : "slack"
+              }
+            }
+          },
+          "then" : {
+            "properties" : {
+              "with" : {
+                "$ref" : "#/definitions/pipeline/PmsSlackChannel"
+              }
+            }
+          }
+        }, {
+          "if" : {
+            "properties" : {
+              "uses" : {
+                "const" : "ms-teams"
+              }
+            }
+          },
+          "then" : {
+            "properties" : {
+              "with" : {
+                "$ref" : "#/definitions/pipeline/PmsMSTeamChannel"
+              }
+            }
+          }
+        }, {
+          "if" : {
+            "properties" : {
+              "uses" : {
+                "const" : "webhook"
+              }
+            }
+          },
+          "then" : {
+            "properties" : {
+              "with" : {
+                "$ref" : "#/definitions/pipeline/PmsWebhookChannel"
+              }
+            }
+          }
+        }, {
+          "if" : {
+            "properties" : {
+              "uses" : {
+                "const" : "pager-duty"
+              }
+            }
+          },
+          "then" : {
+            "properties" : {
+              "with" : {
+                "$ref" : "#/definitions/pipeline/PmsPagerDutyChannel"
+              }
+            }
+          }
+        }, {
+          "if" : {
+            "properties" : {
+              "uses" : {
+                "const" : "datadog"
+              }
+            }
+          },
+          "then" : {
+            "properties" : {
+              "with" : {
+                "$ref" : "#/definitions/pipeline/PmsDatadogChannel"
+              }
+            }
+          }
+        } ],
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "NotificationEvent" : {
+        "title" : "NotificationEvent",
+        "description" : "NotificationEvent defines event types that trigger notifications.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "pipeline" : {
+            "description" : "Pipeline-level events.",
+            "oneOf" : [ {
+              "type" : "string",
+              "enum" : [ "all", "start", "success", "failed", "end" ]
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string",
+                "enum" : [ "all", "start", "success", "failed", "end" ]
+              }
+            } ]
+          },
+          "stage" : {
+            "description" : "Stage-level events.",
+            "oneOf" : [ {
+              "type" : "string",
+              "enum" : [ "all" ]
+            }, {
+              "type" : "array",
+              "items" : {
+                "oneOf" : [ {
+                  "type" : "string",
+                  "enum" : [ "all", "start", "success", "failed" ]
+                }, {
+                  "type" : "object",
+                  "properties" : {
+                    "all" : {
+                      "oneOf" : [ {
+                        "type" : "string"
+                      }, {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      } ]
+                    },
+                    "start" : {
+                      "oneOf" : [ {
+                        "type" : "string"
+                      }, {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      } ]
+                    },
+                    "success" : {
+                      "oneOf" : [ {
+                        "type" : "string"
+                      }, {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      } ]
+                    },
+                    "failed" : {
+                      "oneOf" : [ {
+                        "type" : "string"
+                      }, {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      } ]
+                    }
+                  },
+                  "minProperties" : 1,
+                  "maxProperties" : 1
+                } ]
+              }
+            } ]
+          },
+          "step" : {
+            "description" : "Step-level events.",
+            "oneOf" : [ {
+              "type" : "string",
+              "enum" : [ "failed" ]
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string",
+                "enum" : [ "failed" ]
+              }
+            } ]
+          },
+          "trigger" : {
+            "description" : "Trigger-level events.",
+            "oneOf" : [ {
+              "type" : "string",
+              "enum" : [ "failed" ]
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string",
+                "enum" : [ "failed" ]
+              }
+            } ]
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "PmsEmailChannel" : {
+        "title" : "PmsEmailChannel",
+        "description" : "Email notification channel configuration.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "user-groups" : {
+            "description" : "List of user group references.",
+            "oneOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            } ]
+          },
+          "recipients" : {
+            "description" : "List of email recipients.",
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "PmsSlackChannel" : {
+        "title" : "PmsSlackChannel",
+        "description" : "Slack notification channel configuration.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "user-groups" : {
+            "description" : "List of user group references.",
+            "oneOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            } ]
+          },
+          "webhook" : {
+            "description" : "Slack webhook URL.",
+            "type" : "string"
+          },
+          "bot-token" : {
+            "description" : "Slack bot token secret.",
+            "type" : "string"
+          },
+          "channel" : {
+            "description" : "Slack channel name or ID for bot token notifications.",
+            "type" : "string"
+          },
+          "use-bot-token" : {
+            "description" : "When true, send Slack notifications via bot token.",
+            "type" : "boolean"
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "PmsMSTeamChannel" : {
+        "title" : "PmsMSTeamChannel",
+        "description" : "Microsoft Teams notification channel configuration.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "keys" : {
+            "description" : "List of MS Teams webhook keys.",
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "user-groups" : {
+            "description" : "List of user group references.",
+            "oneOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            } ]
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "PmsWebhookChannel" : {
+        "title" : "PmsWebhookChannel",
+        "description" : "Webhook notification channel configuration.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "user-groups" : {
+            "description" : "List of user group references.",
+            "oneOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            } ]
+          },
+          "url" : {
+            "description" : "Webhook URL.",
+            "type" : "string"
+          },
+          "headers" : {
+            "description" : "HTTP headers for the webhook request.",
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "PmsPagerDutyChannel" : {
+        "title" : "PmsPagerDutyChannel",
+        "description" : "PagerDuty notification channel configuration.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "user-groups" : {
+            "description" : "List of user group references.",
+            "oneOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            } ]
+          },
+          "key" : {
+            "description" : "PagerDuty integration key.",
+            "type" : "string"
+          }
+        },
+        "$schema" : "http://json-schema.org/draft-07/schema#"
+      },
+      "PmsDatadogChannel" : {
+        "title" : "PmsDatadogChannel",
+        "description" : "Datadog notification channel configuration.",
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "user-groups" : {
+            "description" : "List of user group references.",
+            "oneOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            } ]
+          },
+          "api-key" : {
+            "description" : "Datadog API key.",
+            "type" : "string"
+          },
+          "url" : {
+            "description" : "Datadog URL endpoint.",
+            "type" : "string"
+          },
+          "headers" : {
+            "description" : "HTTP headers for the request.",
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "delegate" : {
+            "description" : "Delegate selectors.",
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "execute-on-delegate" : {
+            "description" : "Whether to execute on delegate.",
+            "type" : "boolean"
           }
         },
         "$schema" : "http://json-schema.org/draft-07/schema#"
@@ -4585,603 +3705,1483 @@
           }
         }
       },
-      "pipeline" : {
-        "type" : "object",
-        "title" : "pipeline",
-        "additionalProperties" : false,
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "pattern" : "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
-          },
-          "name" : {
-            "type" : "string",
-            "pattern" : "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
-          },
-          "description" : {
-            "type" : "string",
-            "description" : "Description of the pipeline."
-          },
-          "clone" : {
-            "$ref" : "#/definitions/pipeline/Clone"
-          },
-          "inputs" : {
-            "$ref" : "#/definitions/pipeline/common/NGVariableV1Wrapper"
-          },
-          "timeout" : {
-            "type" : "string",
-            "description" : "Defines pipeline timeout",
-            "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
-          },
-          "allow-stage-executions" : {
-            "type" : "boolean",
-            "description" : "Allows stage executions."
-          },
-          "fixed-inputs-on-rerun" : {
-            "type" : "boolean",
-            "description" : "Fixed inputs on rerun."
-          },
-          "delegate" : {
-            "$ref" : "#/definitions/pipeline/common/Delegate"
-          },
-          "env" : {
+      "steps" : {
+        "unified" : {
+          "StepItems" : {
+            "title" : "StepItems",
+            "description" : "Available step types for pipeline execution.",
             "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
+            "if" : {
+              "anyOf" : [ {
+                "required" : [ "run" ]
+              }, {
+                "required" : [ "clone" ]
+              }, {
+                "required" : [ "background" ]
+              }, {
+                "required" : [ "run-test" ]
+              }, {
+                "required" : [ "wait" ]
+              }, {
+                "required" : [ "barrier" ]
+              }, {
+                "required" : [ "queue" ]
+              }, {
+                "required" : [ "policy" ]
+              }, {
+                "required" : [ "change-advisor" ]
+              }, {
+                "required" : [ "approval" ]
+              }, {
+                "required" : [ "parallel" ]
+              }, {
+                "required" : [ "group" ]
+              }, {
+                "required" : [ "template" ]
+              }, {
+                "required" : [ "agent" ]
+              }, {
+                "required" : [ "action" ]
+              }, {
+                "required" : [ "deploy" ]
+              }, {
+                "required" : [ "build" ]
+              }, {
+                "required" : [ "test" ]
+              }, {
+                "required" : [ "chaos" ]
+              }, {
+                "required" : [ "idp" ]
+              }, {
+                "required" : [ "infrastructure" ]
+              }, {
+                "required" : [ "sto" ]
+              }, {
+                "required" : [ "ai-eval" ]
+              }, {
+                "required" : [ "render" ]
+              } ]
             },
-            "description" : "Provides the default environment variables."
+            "then" : {
+              "allOf" : [ {
+                "if" : {
+                  "anyOf" : [ {
+                    "required" : [ "run" ]
+                  }, {
+                    "required" : [ "clone" ]
+                  }, {
+                    "required" : [ "background" ]
+                  }, {
+                    "required" : [ "run-test" ]
+                  } ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/StepNodeV1"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "wait" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedWaitStepNode"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "barrier" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedBarrierStepNode"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "queue" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedQueueStepNode"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "policy" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPolicyStepNode"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "change-advisor" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedChangeAdvisorStepNode"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "approval" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedApprovalStepNode"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "parallel" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/ParallelSteps"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "group" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/GroupSteps"
+                }
+              }, {
+                "if" : {
+                  "anyOf" : [ {
+                    "required" : [ "template" ]
+                  }, {
+                    "required" : [ "agent" ]
+                  }, {
+                    "required" : [ "action" ]
+                  }, {
+                    "required" : [ "deploy" ]
+                  }, {
+                    "required" : [ "build" ]
+                  }, {
+                    "required" : [ "test" ]
+                  }, {
+                    "required" : [ "chaos" ]
+                  }, {
+                    "required" : [ "idp" ]
+                  }, {
+                    "required" : [ "infrastructure" ]
+                  }, {
+                    "required" : [ "sto" ]
+                  }, {
+                    "required" : [ "ai-eval" ]
+                  } ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/common/UnifiedTemplate"
+                }
+              }, {
+                "if" : {
+                  "required" : [ "render" ]
+                },
+                "then" : {
+                  "$ref" : "#/definitions/pipeline/steps/unified/UnifiedRenderStepNode"
+                }
+              } ]
+            },
+            "else" : {
+              "required" : [ "run" ]
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
           },
-          "repo" : {
-            "description" : "Configures the default repository.",
-            "$ref" : "#/definitions/pipeline/Repository"
-          },
-          "barriers" : {
-            "type" : "array",
-            "description" : "Barriers provides optional pipeline barriers.",
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "if" : {
-            "type" : "string",
-            "description" : "If provides conditional pipeline execution logic. If the condition resolves to false, the pipeline is skipped."
-          },
-          "on" : {
-            "$ref" : "#/definitions/pipeline/On"
-          },
-          "notifications" : {
-            "type" : "array",
-            "description" : "Notifications provides optional pipeline notifications.",
-            "items" : {
-              "$ref" : "#/definitions/pipeline/NotificationRules"
-            }
-          },
-          "tags" : {
+          "StepNodeV1" : {
+            "title" : "StepNodeV1",
+            "description" : "Unified step node for CI/CD pipelines.",
             "type" : "object",
-            "description" : "Tags for the pipeline.",
-            "additionalProperties" : {
-              "type" : "string"
-            }
-          },
-          "template" : {
-            "description" : "Pipeline template reference.",
-            "$ref" : "#/definitions/pipeline/common/TemplateRef"
-          },
-          "stages" : {
-            "type" : "array",
-            "description" : "Pipeline stages - can contain stages, groups, or parallel executions.",
-            "items" : {
-              "$ref" : "#/definitions/pipeline/stages/unified/StageItems"
-            },
-            "maxItems" : 256,
-            "minItems" : 1
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "Repository" : {
-        "title" : "Repository",
-        "description" : "Repository defines a remote git repository.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "connector" : {
-            "description" : "Connector provides the repository connector.",
-            "type" : "string"
-          },
-          "name" : {
-            "description" : "Name provides the repository name.",
-            "type" : "string"
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "On" : {
-        "title" : "On",
-        "description" : "On provides conditional pipeline execution logic based on trigger event and action mapping. If the conditional logic resolves to false, the pipeline is skipped.",
-        "oneOf" : [ {
-          "$ref" : "#/definitions/pipeline/EventType"
-        }, {
-          "type" : "array",
-          "items" : {
-            "$ref" : "#/definitions/pipeline/OnEvent"
-          }
-        } ],
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "EventType" : {
-        "title" : "EventType",
-        "description" : "EventType defines the supported trigger event types.",
-        "type" : "string",
-        "enum" : [ "push", "pull_request" ],
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "OnEvent" : {
-        "title" : "OnEvent",
-        "description" : "OnEvent represents a single event in the on array - either a string or an object with event configuration.",
-        "oneOf" : [ {
-          "$ref" : "#/definitions/pipeline/EventType"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "push" : {
-              "$ref" : "#/definitions/pipeline/BranchFilter"
-            },
-            "pull_request" : {
-              "$ref" : "#/definitions/pipeline/BranchFilter"
-            }
-          },
-          "minProperties" : 1,
-          "maxProperties" : 1
-        } ],
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "BranchFilter" : {
-        "title" : "BranchFilter",
-        "description" : "BranchFilter defines branch filtering for push and pull_request events.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "branches" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "NotificationRules" : {
-        "title" : "NotificationRules",
-        "description" : "NotificationRules defines notification configuration for pipeline events.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "description" : "Unique identifier for the notification rule."
-          },
-          "name" : {
-            "type" : "string",
-            "description" : "Name of the notification rule."
-          },
-          "disabled" : {
-            "type" : "boolean",
-            "description" : "Whether the notification rule is disabled."
-          },
-          "if" : {
-            "type" : "string",
-            "description" : "Condition that must evaluate to true for the notification to be sent. Supports expressions."
-          },
-          "on" : {
-            "type" : "array",
-            "description" : "Notification events that trigger the notification.",
-            "items" : {
-              "$ref" : "#/definitions/pipeline/NotificationEvent"
-            }
-          },
-          "uses" : {
-            "description" : "Notification channel type.",
-            "type" : "string",
-            "enum" : [ "email", "webhook", "pager-duty", "ms-teams", "slack", "datadog" ]
-          },
-          "with" : {
-            "description" : "Channel-specific configuration based on 'uses' type.",
-            "type" : "object"
-          }
-        },
-        "allOf" : [ {
-          "if" : {
-            "properties" : {
-              "uses" : {
-                "const" : "email"
-              }
-            }
-          },
-          "then" : {
-            "properties" : {
-              "with" : {
-                "$ref" : "#/definitions/pipeline/PmsEmailChannel"
-              }
-            }
-          }
-        }, {
-          "if" : {
-            "properties" : {
-              "uses" : {
-                "const" : "slack"
-              }
-            }
-          },
-          "then" : {
-            "properties" : {
-              "with" : {
-                "$ref" : "#/definitions/pipeline/PmsSlackChannel"
-              }
-            }
-          }
-        }, {
-          "if" : {
-            "properties" : {
-              "uses" : {
-                "const" : "ms-teams"
-              }
-            }
-          },
-          "then" : {
-            "properties" : {
-              "with" : {
-                "$ref" : "#/definitions/pipeline/PmsMSTeamChannel"
-              }
-            }
-          }
-        }, {
-          "if" : {
-            "properties" : {
-              "uses" : {
-                "const" : "webhook"
-              }
-            }
-          },
-          "then" : {
-            "properties" : {
-              "with" : {
-                "$ref" : "#/definitions/pipeline/PmsWebhookChannel"
-              }
-            }
-          }
-        }, {
-          "if" : {
-            "properties" : {
-              "uses" : {
-                "const" : "pager-duty"
-              }
-            }
-          },
-          "then" : {
-            "properties" : {
-              "with" : {
-                "$ref" : "#/definitions/pipeline/PmsPagerDutyChannel"
-              }
-            }
-          }
-        }, {
-          "if" : {
-            "properties" : {
-              "uses" : {
-                "const" : "datadog"
-              }
-            }
-          },
-          "then" : {
-            "properties" : {
-              "with" : {
-                "$ref" : "#/definitions/pipeline/PmsDatadogChannel"
-              }
-            }
-          }
-        } ],
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "NotificationEvent" : {
-        "title" : "NotificationEvent",
-        "description" : "NotificationEvent defines event types that trigger notifications.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "pipeline" : {
-            "description" : "Pipeline-level events.",
-            "oneOf" : [ {
-              "type" : "string",
-              "enum" : [ "all", "start", "success", "failed", "end" ]
+            "additionalProperties" : false,
+            "anyOf" : [ {
+              "required" : [ "run" ]
             }, {
-              "type" : "array",
-              "items" : {
+              "required" : [ "clone" ]
+            }, {
+              "required" : [ "background" ]
+            }, {
+              "required" : [ "run-test" ]
+            } ],
+            "properties" : {
+              "id" : {
+                "description" : "Unique identifier for the step.",
                 "type" : "string",
-                "enum" : [ "all", "start", "success", "failed", "end" ]
+                "pattern" : "^[a-zA-Z_][0-9a-zA-Z_$]{0,127}$"
+              },
+              "name" : {
+                "description" : "Display name of the step.",
+                "type" : "string",
+                "pattern" : "^[a-zA-Z_][0-9a-zA-Z-_ ]{0,127}$",
+                "minLength" : 1,
+                "maxLength" : 128
+              },
+              "description" : {
+                "description" : "Description of the step.",
+                "type" : "string"
+              },
+              "if" : {
+                "description" : "Conditional execution expression. Step is skipped if condition resolves to false. Supports expressions.",
+                "type" : "string"
+              },
+              "permissions" : {
+                "description" : "Resource to action map used to scope the HARNESS_TOKEN injected into this step. For example, pipeline - execute.",
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "string"
+                }
+              },
+              "strategy" : {
+                "description" : "Execution strategy (matrix, for, while, repeat). Supports expressions.",
+                "oneOf" : [ {
+                  "$ref" : "#/definitions/pipeline/common/StrategyConfigV1"
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "enforce" : {
+                "description" : "Policy enforcement configuration.",
+                "$ref" : "#/definitions/pipeline/steps/unified/PolicyConfig"
+              },
+              "needs" : {
+                "description" : "Step dependencies (steps that must complete before this one).",
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              },
+              "on-failure" : {
+                "$ref" : "#/definitions/pipeline/common/OnFailure"
+              },
+              "timeout" : {
+                "description" : "Step timeout duration. Supports expressions.",
+                "type" : "string",
+                "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              },
+              "run" : {
+                "description" : "Run step configuration. Can be a simple command string or a detailed run configuration object.",
+                "oneOf" : [ {
+                  "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "run-test" : {
+                "description" : "Run tests step configuration. Supports expressions.",
+                "oneOf" : [ {
+                  "$ref" : "#/definitions/pipeline/steps/unified/RunTestsStepInfoV1"
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "clone" : {
+                "description" : "Git clone step configuration.",
+                "$ref" : "#/definitions/pipeline/Clone"
+              },
+              "background" : {
+                "description" : "Background service step configuration. Supports expressions.",
+                "oneOf" : [ {
+                  "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "templateConnectorRefs" : {
+                "description" : "Connector refs collected from template with: inputs and stamped on the expanded step so hosted-infra validation can see them after merge.",
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
               }
-            } ]
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
           },
-          "stage" : {
-            "description" : "Stage-level events.",
-            "oneOf" : [ {
-              "type" : "string",
-              "enum" : [ "all" ]
-            }, {
-              "type" : "array",
-              "items" : {
+          "PolicyConfig" : {
+            "title" : "PolicyConfig",
+            "description" : "Policy enforcement configuration.",
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+              "policySets" : {
+                "description" : "Policy sets to enforce.",
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "RunStepInfoV1" : {
+            "title" : "RunStepInfoV1",
+            "description" : "Run step configuration for executing scripts.",
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+              "shell" : {
+                "description" : "Shell type to use. Supports expressions.",
+                "type" : "string"
+              },
+              "script" : {
+                "description" : "Script to execute. Supports expressions.",
+                "type" : "string"
+              },
+              "uses" : {
+                "description" : "Plugin identifier registered with VMS. Supports expressions.",
+                "type" : "string"
+              },
+              "version" : {
+                "description" : "Optional plugin version pin. Unset lets VMS resolve. Supports expressions.",
+                "type" : "string"
+              },
+              "container" : {
+                "description" : "Container configuration for the step.",
+                "$ref" : "#/definitions/pipeline/steps/unified/Container"
+              },
+              "output" : {
+                "description" : "Output variables to capture.",
+                "oneOf" : [ {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/definitions/pipeline/common/OutputV1"
+                  }
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "report" : {
+                "description" : "Test report configuration. Supports expressions.",
+                "$ref" : "#/definitions/pipeline/steps/unified/Report"
+              },
+              "delegate" : {
+                "description" : "Delegate selectors.",
+                "$ref" : "#/definitions/pipeline/common/Delegate"
+              },
+              "env" : {
+                "description" : "Environment variables. Supports expressions.",
+                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
+              },
+              "with" : {
+                "description" : "Additional parameters. Supports expressions.",
+                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
+              },
+              "download" : {
+                "description" : "Download configuration. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "source" : {
+                      "description" : "Source URL to download from.",
+                      "type" : "string"
+                    },
+                    "target" : {
+                      "description" : "Target path to save the file.",
+                      "type" : "string"
+                    },
+                    "checksum" : {
+                      "description" : "Checksum to verify the downloaded file.",
+                      "type" : "string"
+                    },
+                    "fallback" : {
+                      "description" : "Fallback URL if primary source fails.",
+                      "type" : "string"
+                    },
+                    "entrypoint" : {
+                      "description" : "Entrypoint command and arguments for the downloaded binary.",
+                      "type" : "array",
+                      "items" : {
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "output-alias" : {
+                "description" : "Output alias configuration for exporting variables.",
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "key", "scope" ],
+                "properties" : {
+                  "key" : {
+                    "description" : "Output variable key. Supports expressions.",
+                    "type" : "string"
+                  },
+                  "scope" : {
+                    "description" : "Export scope for the output.",
+                    "type" : "string",
+                    "enum" : [ "Pipeline", "Stage", "StepGroup" ]
+                  }
+                }
+              },
+              "sourceStepType" : {
+                "description" : "Merge-time origin of an expanded step. Set to Agent when this run was produced from an agent template. Used for CI metrics; not sent to lite-engine.\n",
+                "type" : "string"
+              },
+              "sourceName" : {
+                "description" : "Identifier of the originating agent template when sourceStepType is set. First write wins so an outer custom agent is not overwritten by inner harnessAI.\n",
+                "type" : "string"
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "Container" : {
+            "title" : "Container",
+            "description" : "Container configuration for step execution.",
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+              "image" : {
+                "description" : "Container image to use. Supports expressions.",
+                "type" : "string"
+              },
+              "connector" : {
+                "description" : "Image registry connector. Supports expressions.",
+                "type" : "string"
+              },
+              "registry" : {
+                "description" : "Harness Artifact Registry reference for the image. Supports expressions.",
+                "type" : "string"
+              },
+              "credentials" : {
+                "description" : "Container registry credentials.",
+                "type" : "object",
+                "properties" : {
+                  "username" : {
+                    "description" : "Registry username.",
+                    "type" : "string"
+                  },
+                  "password" : {
+                    "description" : "Registry password.",
+                    "type" : "string"
+                  },
+                  "aws" : {
+                    "description" : "AWS ECR credentials.",
+                    "type" : "object",
+                    "properties" : {
+                      "access-key" : {
+                        "description" : "AWS access key.",
+                        "type" : "string"
+                      },
+                      "secret-key" : {
+                        "description" : "AWS secret key.",
+                        "type" : "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "pull" : {
+                "description" : "Image pull policy. Supports expressions.",
                 "oneOf" : [ {
                   "type" : "string",
-                  "enum" : [ "all", "start", "success", "failed" ]
+                  "enum" : [ "always", "never", "if-not-exists" ]
                 }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "entrypoint" : {
+                "description" : "Container entrypoint. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "args" : {
+                "description" : "Container arguments.",
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              },
+              "dns" : {
+                "description" : "Custom DNS servers.",
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              },
+              "env" : {
+                "description" : "Environment variables.",
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "string"
+                }
+              },
+              "extra-hosts" : {
+                "description" : "Extra hosts to add to /etc/hosts.",
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              },
+              "network" : {
+                "description" : "Docker network name.",
+                "type" : "string"
+              },
+              "network-mode" : {
+                "description" : "Docker network mode.",
+                "type" : "string"
+              },
+              "privileged" : {
+                "description" : "Run in privileged mode. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "boolean"
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "workdir" : {
+                "description" : "Working directory.",
+                "type" : "string"
+              },
+              "ports" : {
+                "description" : "Ports to expose.",
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              },
+              "port-bindings" : {
+                "description" : "Port bindings. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "string"
+                  }
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "volumes" : {
+                "description" : "Volume mounts.",
+                "type" : "array",
+                "items" : {
                   "type" : "object",
                   "properties" : {
-                    "all" : {
+                    "source" : {
+                      "description" : "Source path.",
+                      "type" : "string"
+                    },
+                    "target" : {
+                      "description" : "Target path in container.",
+                      "type" : "string"
+                    }
+                  }
+                }
+              },
+              "user" : {
+                "description" : "User ID to run as. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "integer"
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "group" : {
+                "description" : "Group to run as.",
+                "type" : "string"
+              },
+              "cpu" : {
+                "description" : "CPU limit. Ignored when resources.limits.cpu is set.",
+                "type" : "string"
+              },
+              "memory" : {
+                "description" : "Memory limit. Ignored when resources.limits.memory is set.",
+                "type" : "string"
+              },
+              "resources" : {
+                "description" : "Container resource limits and requests. Takes precedence over the flat cpu/memory fields.",
+                "$ref" : "#/definitions/pipeline/Resource"
+              },
+              "shm-size" : {
+                "description" : "Shared memory size.",
+                "type" : "string"
+              },
+              "files" : {
+                "description" : "Files to inject into container.",
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "Report" : {
+            "title" : "Report",
+            "description" : "Test report configuration.",
+            "oneOf" : [ {
+              "type" : "object",
+              "properties" : {
+                "paths" : {
+                  "description" : "Report file paths. Can be single value or array. Supports expressions.",
+                  "oneOf" : [ {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string"
+                    }
+                  }, {
+                    "type" : "string"
+                  } ]
+                },
+                "type" : {
+                  "description" : "Report type.",
+                  "type" : "string",
+                  "enum" : [ "junit" ]
+                }
+              }
+            }, {
+              "$ref" : "#/definitions/pipeline/common/Expression"
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "RunTestsStepInfoV1" : {
+            "title" : "RunTestsStepInfoV1",
+            "description" : "Run tests step configuration for test intelligence.",
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+              "shell" : {
+                "description" : "Shell type to use. Supports expressions.",
+                "type" : "string"
+              },
+              "script" : {
+                "description" : "Test command to execute. Supports expressions.",
+                "type" : "string"
+              },
+              "match" : {
+                "description" : "Test file patterns to match. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "container" : {
+                "description" : "Container configuration for the step.",
+                "$ref" : "#/definitions/pipeline/steps/unified/Container"
+              },
+              "output" : {
+                "description" : "Output variables to capture.",
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/pipeline/common/OutputV1"
+                }
+              },
+              "report" : {
+                "description" : "Test report configuration. Supports expressions.",
+                "$ref" : "#/definitions/pipeline/steps/unified/Report"
+              },
+              "delegate" : {
+                "description" : "Delegate selectors.",
+                "$ref" : "#/definitions/pipeline/common/Delegate"
+              },
+              "env" : {
+                "description" : "Environment variables. Supports expressions.",
+                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
+              },
+              "with" : {
+                "description" : "Additional parameters. Supports expressions.",
+                "$ref" : "#/definitions/pipeline/common/ObjectOrExpression"
+              },
+              "intelligence" : {
+                "description" : "Test intelligence configuration.",
+                "type" : "object",
+                "additionalProperties" : false,
+                "properties" : {
+                  "disabled" : {
+                    "description" : "Whether test intelligence is disabled. Supports expressions.",
+                    "oneOf" : [ {
+                      "type" : "boolean"
+                    }, {
+                      "$ref" : "#/definitions/pipeline/common/Expression"
+                    } ]
+                  }
+                }
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedWaitStepNode" : {
+            "title" : "UnifiedWaitStepNode",
+            "description" : "Wait step node for pausing pipeline execution.",
+            "allOf" : [ {
+              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
+            }, {
+              "type" : "object",
+              "required" : [ "wait" ],
+              "properties" : {
+                "wait" : {
+                  "description" : "Wait step configuration.",
+                  "type" : "object",
+                  "required" : [ "duration" ],
+                  "properties" : {
+                    "duration" : {
+                      "description" : "Duration to wait (e.g., 10s, 5m, 1h 30m). Supports <+...> and ${{...}} expressions, runtime input and execution input.",
+                      "type" : "string",
+                      "pattern" : "^((([1-9])+\\d+[s])|((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>.*)|(.*\\$\\{\\{.+\\}\\}.*))$"
+                    }
+                  }
+                }
+              }
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedPmsAbstractStepNode" : {
+            "title" : "UnifiedPmsAbstractStepNode",
+            "description" : "Abstract step node with common properties shared by all step types.",
+            "type" : "object",
+            "properties" : {
+              "id" : {
+                "description" : "Unique identifier for the step.",
+                "type" : "string"
+              },
+              "name" : {
+                "description" : "Display name of the step.",
+                "type" : "string"
+              },
+              "description" : {
+                "description" : "Description of the step.",
+                "type" : "string"
+              },
+              "if" : {
+                "description" : "Conditional execution expression. Step is skipped if condition resolves to false. Supports expressions.",
+                "type" : "string"
+              },
+              "permissions" : {
+                "description" : "Resource to action map used to scope the HARNESS_TOKEN injected into this step. For example, pipeline - execute.",
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "string"
+                }
+              },
+              "strategy" : {
+                "description" : "Execution strategy (matrix, for, while, repeat). Supports expressions.",
+                "oneOf" : [ {
+                  "$ref" : "#/definitions/pipeline/common/StrategyConfigV1"
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "enforce" : {
+                "description" : "Policy enforcement configuration.",
+                "$ref" : "#/definitions/pipeline/steps/unified/PolicyConfig"
+              },
+              "on-failure" : {
+                "$ref" : "#/definitions/pipeline/common/OnFailure"
+              },
+              "timeout" : {
+                "description" : "Step timeout duration. Supports expressions.",
+                "type" : "string",
+                "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedBarrierStepNode" : {
+            "title" : "UnifiedBarrierStepNode",
+            "description" : "Barrier step node for synchronizing pipeline execution.",
+            "allOf" : [ {
+              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
+            }, {
+              "type" : "object",
+              "required" : [ "barrier" ],
+              "properties" : {
+                "barrier" : {
+                  "description" : "Barrier step configuration.",
+                  "type" : "object",
+                  "required" : [ "name" ],
+                  "properties" : {
+                    "name" : {
+                      "description" : "Reference name of the barrier defined in pipeline barriers.",
+                      "type" : "string"
+                    }
+                  }
+                }
+              }
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedQueueStepNode" : {
+            "title" : "UnifiedQueueStepNode",
+            "description" : "Queue step node for resource constraint management.",
+            "allOf" : [ {
+              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
+            }, {
+              "type" : "object",
+              "required" : [ "queue" ],
+              "properties" : {
+                "queue" : {
+                  "description" : "Queue step configuration.",
+                  "type" : "object",
+                  "required" : [ "key", "scope" ],
+                  "properties" : {
+                    "key" : {
+                      "description" : "Resource key for the queue. Supports expressions.",
+                      "type" : "string"
+                    },
+                    "scope" : {
+                      "description" : "Scope of the queue holding.",
+                      "type" : "string",
+                      "enum" : [ "Pipeline", "Stage" ]
+                    }
+                  }
+                }
+              }
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedPolicyStepNode" : {
+            "title" : "UnifiedPolicyStepNode",
+            "description" : "Policy step node for OPA policy evaluation.",
+            "allOf" : [ {
+              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
+            }, {
+              "type" : "object",
+              "required" : [ "policy" ],
+              "properties" : {
+                "policy" : {
+                  "description" : "Policy step configuration.",
+                  "type" : "object",
+                  "required" : [ "sets", "payload" ],
+                  "properties" : {
+                    "sets" : {
+                      "description" : "Policy sets to evaluate. Supports single value or array. Supports expressions.",
                       "oneOf" : [ {
-                        "type" : "string"
-                      }, {
                         "type" : "array",
                         "items" : {
                           "type" : "string"
                         }
+                      }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
                       } ]
                     },
-                    "start" : {
+                    "payload" : {
+                      "description" : "JSON payload to evaluate against policies. Supports expressions.",
+                      "type" : "string"
+                    }
+                  }
+                }
+              }
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedChangeAdvisorStepNode" : {
+            "title" : "UnifiedChangeAdvisorStepNode",
+            "description" : "Change Advisor step node for advisory evaluation before deployment.",
+            "allOf" : [ {
+              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
+            }, {
+              "type" : "object",
+              "required" : [ "change-advisor" ],
+              "properties" : {
+                "change-advisor" : {
+                  "description" : "Change Advisor step configuration.",
+                  "type" : "object",
+                  "properties" : {
+                    "mode" : {
+                      "description" : "Advisory mode for the Change Advisor step.",
                       "oneOf" : [ {
-                        "type" : "string"
+                        "type" : "string",
+                        "enum" : [ "ADVISORY", "ENFORCING" ]
                       }, {
-                        "type" : "array",
-                        "items" : {
-                          "type" : "string"
-                        }
+                        "$ref" : "#/definitions/pipeline/common/Expression"
                       } ]
                     },
-                    "success" : {
+                    "policy-pack" : {
+                      "description" : "Policy pack to evaluate the change against (e.g. balanced).",
                       "oneOf" : [ {
                         "type" : "string"
                       }, {
-                        "type" : "array",
-                        "items" : {
-                          "type" : "string"
-                        }
+                        "$ref" : "#/definitions/pipeline/common/Expression"
                       } ]
                     },
-                    "failed" : {
+                    "timeout-minutes" : {
+                      "description" : "Maximum time in minutes to wait for the advisory call.",
                       "oneOf" : [ {
-                        "type" : "string"
+                        "type" : "integer"
                       }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
+                      } ]
+                    },
+                    "presets" : {
+                      "description" : "Preset identifiers applied to the advisory evaluation.",
+                      "oneOf" : [ {
                         "type" : "array",
                         "items" : {
                           "type" : "string"
                         }
+                      }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
+                      } ]
+                    },
+                    "env" : {
+                      "description" : "Target environment identifier for the change.",
+                      "oneOf" : [ {
+                        "type" : "string"
+                      }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
+                      } ]
+                    },
+                    "user-groups" : {
+                      "description" : "User groups for approval when the advisory decision requires gating. Supports single value or array. Supports expressions.",
+                      "oneOf" : [ {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
+                      } ]
+                    },
+                    "service-accounts" : {
+                      "description" : "Service accounts for approval when the advisory decision requires gating. Supports single value or array. Supports expressions.",
+                      "oneOf" : [ {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
+                      } ]
+                    },
+                    "approvers-min-count" : {
+                      "description" : "Minimum number of approvers required when the advisory decision requires gating. Supports expressions.",
+                      "oneOf" : [ {
+                        "type" : "integer"
+                      }, {
+                        "type" : "string"
+                      } ]
+                    },
+                    "block-executor" : {
+                      "description" : "Block pipeline executor from approving when the advisory decision requires gating. Supports expressions.",
+                      "oneOf" : [ {
+                        "type" : "boolean"
+                      }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
                       } ]
                     }
+                  }
+                }
+              }
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedApprovalStepNode" : {
+            "title" : "UnifiedApprovalStepNode",
+            "description" : "Approval step node for manual, Jira, ServiceNow, or custom approvals.",
+            "allOf" : [ {
+              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
+            }, {
+              "type" : "object",
+              "required" : [ "approval" ],
+              "properties" : {
+                "approval" : {
+                  "description" : "Approval step configuration.",
+                  "type" : "object",
+                  "required" : [ "uses" ],
+                  "properties" : {
+                    "uses" : {
+                      "description" : "Type of approval.",
+                      "type" : "string",
+                      "enum" : [ "harness", "jira", "servicenow", "custom" ]
+                    },
+                    "with" : {
+                      "description" : "Approval type-specific configuration.",
+                      "type" : "object"
+                    }
                   },
-                  "minProperties" : 1,
-                  "maxProperties" : 1
+                  "allOf" : [ {
+                    "if" : {
+                      "properties" : {
+                        "uses" : {
+                          "const" : "harness"
+                        }
+                      }
+                    },
+                    "then" : {
+                      "properties" : {
+                        "with" : {
+                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedManualApprovalStepSpec"
+                        }
+                      }
+                    }
+                  }, {
+                    "if" : {
+                      "properties" : {
+                        "uses" : {
+                          "const" : "jira"
+                        }
+                      }
+                    },
+                    "then" : {
+                      "properties" : {
+                        "with" : {
+                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedJiraApprovalStepSpec"
+                        }
+                      }
+                    }
+                  }, {
+                    "if" : {
+                      "properties" : {
+                        "uses" : {
+                          "const" : "servicenow"
+                        }
+                      }
+                    },
+                    "then" : {
+                      "properties" : {
+                        "with" : {
+                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedServiceNowApprovalStepSpec"
+                        }
+                      }
+                    }
+                  }, {
+                    "if" : {
+                      "properties" : {
+                        "uses" : {
+                          "const" : "custom"
+                        }
+                      }
+                    },
+                    "then" : {
+                      "properties" : {
+                        "with" : {
+                          "$ref" : "#/definitions/pipeline/steps/unified/UnifiedCustomApprovalStepSpec"
+                        }
+                      }
+                    }
+                  } ]
+                }
+              }
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedManualApprovalStepSpec" : {
+            "title" : "UnifiedManualApprovalStepSpec",
+            "description" : "Harness manual approval step specification.",
+            "type" : "object",
+            "properties" : {
+              "message" : {
+                "description" : "Approval message. Supports expressions.",
+                "type" : "string"
+              },
+              "callback" : {
+                "description" : "Callback ID for the approval. Supports expressions.",
+                "type" : "string"
+              },
+              "user-groups" : {
+                "description" : "User groups for approval. Supports single value or array. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "service-accounts" : {
+                "description" : "Service accounts for approval. Supports single value or array. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "approvers-min-count" : {
+                "description" : "Minimum number of approvers required. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "integer"
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "block-executor" : {
+                "description" : "Block pipeline executor from approving. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "boolean"
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "execution-details" : {
+                "description" : "Include pipeline execution history.",
+                "type" : "boolean"
+              },
+              "auto-reject" : {
+                "description" : "Enable automatic rejection on timeout. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "boolean"
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "auto-approve" : {
+                "description" : "Enable automatic approval.",
+                "type" : "boolean"
+              },
+              "timezone" : {
+                "description" : "Timezone for auto-approval deadline. Supports expressions.",
+                "type" : "string"
+              },
+              "deadline" : {
+                "description" : "Deadline for auto-approval. Supports expressions.",
+                "type" : "string"
+              },
+              "comments" : {
+                "description" : "Comments for auto-approval. Supports expressions.",
+                "type" : "string"
+              },
+              "inputs" : {
+                "description" : "Approver input parameters keyed by input variable name.",
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "object",
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "description" : {
+                      "description" : "Description of the approver input.",
+                      "type" : "string"
+                    },
+                    "pattern" : {
+                      "description" : "Regex pattern the approver input value must match. Mutually exclusive with `enum`. Supports expressions.",
+                      "type" : "string"
+                    },
+                    "multi-select" : {
+                      "description" : "Allow selecting multiple values from `enum`. Only applicable when `enum` is provided.",
+                      "type" : "boolean"
+                    },
+                    "enum" : {
+                      "description" : "Allowed values for the approver input. Mutually exclusive with `pattern`. Supports expressions.",
+                      "oneOf" : [ {
+                        "type" : "array",
+                        "items" : {
+                          "type" : "string"
+                        }
+                      }, {
+                        "$ref" : "#/definitions/pipeline/common/Expression"
+                      } ]
+                    },
+                    "required" : {
+                      "description" : "Whether the approver input is required.",
+                      "type" : "boolean"
+                    },
+                    "default" : {
+                      "description" : "Default value for the approver input. Supports expressions.",
+                      "type" : "string"
+                    }
+                  },
+                  "not" : {
+                    "required" : [ "pattern", "enum" ]
+                  }
+                }
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedJiraApprovalStepSpec" : {
+            "title" : "UnifiedJiraApprovalStepSpec",
+            "description" : "Jira approval step specification.",
+            "type" : "object",
+            "additionalProperties" : true,
+            "required" : [ "approve" ],
+            "properties" : {
+              "retry" : {
+                "description" : "Retry interval for polling Jira.",
+                "type" : "string"
+              },
+              "approve" : {
+                "description" : "Approval criteria configuration.",
+                "anyOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : true
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "reject" : {
+                "description" : "Rejection criteria configuration.",
+                "anyOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : true
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "run" : {
+                "description" : "Run step configuration for script execution.",
+                "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
+              },
+              "project" : {
+                "description" : "Jira project key. The fetched issue must belong to this project.",
+                "type" : "string"
+              },
+              "type" : {
+                "description" : "Jira issue type. The fetched issue must be of this type.",
+                "type" : "string"
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedServiceNowApprovalStepSpec" : {
+            "title" : "UnifiedServiceNowApprovalStepSpec",
+            "description" : "ServiceNow approval step specification.",
+            "type" : "object",
+            "additionalProperties" : true,
+            "required" : [ "approve" ],
+            "properties" : {
+              "retry" : {
+                "description" : "Retry interval for polling ServiceNow.",
+                "type" : "string"
+              },
+              "approve" : {
+                "description" : "Approval criteria configuration.",
+                "anyOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : true
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "reject" : {
+                "description" : "Rejection criteria configuration.",
+                "anyOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : true
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "run" : {
+                "description" : "Run step configuration for script execution.",
+                "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
+              },
+              "change-window" : {
+                "description" : "ServiceNow change window configuration.",
+                "type" : "object",
+                "properties" : {
+                  "start" : {
+                    "description" : "Start field for change window.",
+                    "type" : "string"
+                  },
+                  "end" : {
+                    "description" : "End field for change window.",
+                    "type" : "string"
+                  }
+                }
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedCustomApprovalStepSpec" : {
+            "title" : "UnifiedCustomApprovalStepSpec",
+            "description" : "Custom approval step specification.",
+            "type" : "object",
+            "additionalProperties" : true,
+            "required" : [ "retry", "approve" ],
+            "properties" : {
+              "script-timeout" : {
+                "description" : "Timeout for script execution.",
+                "type" : "string"
+              },
+              "retry" : {
+                "description" : "Retry interval for polling.",
+                "type" : "string"
+              },
+              "approve" : {
+                "description" : "Approval criteria configuration.",
+                "anyOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : true
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "reject" : {
+                "description" : "Rejection criteria configuration.",
+                "anyOf" : [ {
+                  "type" : "object",
+                  "additionalProperties" : true
+                }, {
+                  "type" : "string"
+                } ]
+              },
+              "run" : {
+                "description" : "Run step configuration for script execution.",
+                "$ref" : "#/definitions/pipeline/steps/unified/RunStepInfoV1"
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "ParallelSteps" : {
+            "title" : "ParallelSteps",
+            "description" : "Defines a list of steps to be executed in parallel.",
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [ "parallel" ],
+            "properties" : {
+              "parallel" : {
+                "type" : "object",
+                "additionalProperties" : false,
+                "required" : [ "steps" ],
+                "properties" : {
+                  "steps" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/definitions/pipeline/steps/unified/StepItems"
+                    }
+                  }
+                }
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "GroupSteps" : {
+            "title" : "GroupSteps",
+            "description" : "Defines a group of steps.",
+            "type" : "object",
+            "required" : [ "group" ],
+            "properties" : {
+              "id" : {
+                "type" : "string",
+                "description" : "Unique identifier for the step group."
+              },
+              "name" : {
+                "type" : "string",
+                "description" : "Display name of the step group."
+              },
+              "group" : {
+                "type" : "object",
+                "required" : [ "steps" ],
+                "properties" : {
+                  "id" : {
+                    "type" : "string",
+                    "description" : "Unique identifier for the step group.",
+                    "pattern" : "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+                  },
+                  "name" : {
+                    "type" : "string",
+                    "description" : "Display name of the step group."
+                  },
+                  "description" : {
+                    "type" : "string",
+                    "description" : "Description of the step group."
+                  },
+                  "if" : {
+                    "type" : "string",
+                    "description" : "Conditional execution expression. Group is skipped if condition resolves to false."
+                  },
+                  "strategy" : {
+                    "description" : "Execution strategy (matrix, for, while, repeat). Supports expressions.",
+                    "oneOf" : [ {
+                      "$ref" : "#/definitions/pipeline/common/StrategyConfigV1"
+                    }, {
+                      "$ref" : "#/definitions/pipeline/common/Expression"
+                    } ]
+                  },
+                  "on-failure" : {
+                    "$ref" : "#/definitions/pipeline/common/OnFailure"
+                  },
+                  "timeout" : {
+                    "type" : "string",
+                    "description" : "Step group timeout duration.",
+                    "pattern" : "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+                  },
+                  "output" : {
+                    "description" : "Step group output variables. Each entry is a single key:value pair where the key is the\nSG-published output name and the value is either a plain-string descendant step output\nname to capture, or a Harness expression evaluated at step group completion.\n",
+                    "type" : "array",
+                    "items" : {
+                      "type" : "object",
+                      "minProperties" : 1,
+                      "maxProperties" : 1,
+                      "additionalProperties" : false,
+                      "patternProperties" : {
+                        "^[a-zA-Z_][a-zA-Z0-9_]*$" : {
+                          "type" : "string"
+                        }
+                      }
+                    }
+                  },
+                  "steps" : {
+                    "description" : "Steps within the group, or an expression that resolves to an array of steps.",
+                    "oneOf" : [ {
+                      "type" : "array",
+                      "items" : {
+                        "$ref" : "#/definitions/pipeline/steps/unified/StepItems"
+                      },
+                      "minItems" : 1
+                    }, {
+                      "$ref" : "#/definitions/pipeline/common/Expression"
+                    } ]
+                  }
+                }
+              }
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          },
+          "UnifiedRenderStepNode" : {
+            "title" : "UnifiedRenderStepNode",
+            "description" : "Render step node for manifest rendering.",
+            "allOf" : [ {
+              "$ref" : "#/definitions/pipeline/steps/unified/UnifiedPmsAbstractStepNode"
+            }, {
+              "type" : "object",
+              "required" : [ "render" ],
+              "properties" : {
+                "render" : {
+                  "description" : "Render step configuration.",
+                  "type" : "object",
+                  "properties" : {
+                    "with" : {
+                      "description" : "Render step parameters including manifest type and inputs.",
+                      "type" : "object",
+                      "required" : [ "kind" ],
+                      "properties" : {
+                        "kind" : {
+                          "description" : "Manifest type to render (e.g., k8s).",
+                          "type" : "string"
+                        }
+                      },
+                      "additionalProperties" : true
+                    }
+                  }
+                }
+              }
+            } ],
+            "$schema" : "http://json-schema.org/draft-07/schema#"
+          }
+        },
+        "common" : {
+          "PlatformV1" : {
+            "title" : "PlatformV1",
+            "description" : "Platform configuration describing the operating system and CPU architecture for a stage runtime.",
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+              "os" : {
+                "description" : "Operating system for the stage runtime. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "string",
+                  "enum" : [ "linux", "windows", "macos" ]
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
+                } ]
+              },
+              "arch" : {
+                "description" : "CPU architecture for the stage runtime. Supports expressions.",
+                "oneOf" : [ {
+                  "type" : "string",
+                  "enum" : [ "amd64", "arm64" ]
+                }, {
+                  "$ref" : "#/definitions/pipeline/common/Expression"
                 } ]
               }
-            } ]
-          },
-          "step" : {
-            "description" : "Step-level events.",
-            "oneOf" : [ {
-              "type" : "string",
-              "enum" : [ "failed" ]
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string",
-                "enum" : [ "failed" ]
-              }
-            } ]
-          },
-          "trigger" : {
-            "description" : "Trigger-level events.",
-            "oneOf" : [ {
-              "type" : "string",
-              "enum" : [ "failed" ]
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string",
-                "enum" : [ "failed" ]
-              }
-            } ]
+            },
+            "$schema" : "http://json-schema.org/draft-07/schema#"
           }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "PmsEmailChannel" : {
-        "title" : "PmsEmailChannel",
-        "description" : "Email notification channel configuration.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "user-groups" : {
-            "description" : "List of user group references.",
-            "oneOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            } ]
-          },
-          "recipients" : {
-            "description" : "List of email recipients.",
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "PmsSlackChannel" : {
-        "title" : "PmsSlackChannel",
-        "description" : "Slack notification channel configuration.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "user-groups" : {
-            "description" : "List of user group references.",
-            "oneOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            } ]
-          },
-          "webhook" : {
-            "description" : "Slack webhook URL.",
-            "type" : "string"
-          },
-          "bot-token" : {
-            "description" : "Slack bot token secret.",
-            "type" : "string"
-          },
-          "channel" : {
-            "description" : "Slack channel name or ID for bot token notifications.",
-            "type" : "string"
-          },
-          "use-bot-token" : {
-            "description" : "When true, send Slack notifications via bot token.",
-            "type" : "boolean"
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "PmsMSTeamChannel" : {
-        "title" : "PmsMSTeamChannel",
-        "description" : "Microsoft Teams notification channel configuration.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "keys" : {
-            "description" : "List of MS Teams webhook keys.",
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "user-groups" : {
-            "description" : "List of user group references.",
-            "oneOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            } ]
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "PmsWebhookChannel" : {
-        "title" : "PmsWebhookChannel",
-        "description" : "Webhook notification channel configuration.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "user-groups" : {
-            "description" : "List of user group references.",
-            "oneOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            } ]
-          },
-          "url" : {
-            "description" : "Webhook URL.",
-            "type" : "string"
-          },
-          "headers" : {
-            "description" : "HTTP headers for the webhook request.",
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
-            }
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "PmsPagerDutyChannel" : {
-        "title" : "PmsPagerDutyChannel",
-        "description" : "PagerDuty notification channel configuration.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "user-groups" : {
-            "description" : "List of user group references.",
-            "oneOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            } ]
-          },
-          "key" : {
-            "description" : "PagerDuty integration key.",
-            "type" : "string"
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
-      },
-      "PmsDatadogChannel" : {
-        "title" : "PmsDatadogChannel",
-        "description" : "Datadog notification channel configuration.",
-        "type" : "object",
-        "additionalProperties" : false,
-        "properties" : {
-          "user-groups" : {
-            "description" : "List of user group references.",
-            "oneOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            } ]
-          },
-          "api-key" : {
-            "description" : "Datadog API key.",
-            "type" : "string"
-          },
-          "url" : {
-            "description" : "Datadog URL endpoint.",
-            "type" : "string"
-          },
-          "headers" : {
-            "description" : "HTTP headers for the request.",
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
-            }
-          },
-          "delegate" : {
-            "description" : "Delegate selectors.",
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "execute-on-delegate" : {
-            "description" : "Whether to execute on delegate.",
-            "type" : "boolean"
-          }
-        },
-        "$schema" : "http://json-schema.org/draft-07/schema#"
+        }
       }
     },
     "template" : {
